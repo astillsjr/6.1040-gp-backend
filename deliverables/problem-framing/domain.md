@@ -1,0 +1,3 @@
+## Domain: Commuunity engangement and volunteer management
+
+This project lies in the domain of nonprofit operatiosna dn community sservice coordination. Small and medium-size nonprofit organizations (e.g., local shelters, enviromental groups, cultural associatons) often rely on volunteers to run events and deliver services. However, they frequently lack efficient digital tools to manage volunteers, especially tools that are affordable, easy to use, and tailored to their scale and needs.
