@@ -1,36 +1,21 @@
-<!-- Ethical analysis: an identification of stakeholders and the impacts they might experience. -->
-stakeholders-
-
-community members- resource owners/resource seekers
--saved money by not spending
--local aspect means they save time (no need to go out to buy items)
--less clutter in household bc sharing
--brings back service sharing system by introducing services as an option and others can share what they have to exchange for it
-
-
-environmental advocates
--appreacite the reduce/reuse/recycle/share aspect of app
-
-
-neighborhood associations
--can be seen as a positive action
--more community involvement = happier community?
-
-
-stores
--losing sells bc of new sharing platform?
-
 # Ethical Analysis
 
 ## Stakeholder Identification
 
--  **Direct Stakeholders**
-	-  **Community Members:** 
+-  **Direct Stakeholders and Impacts**
+	-  **Community Members:**
+ 		-  	"no buy" culture saves the stakeholder money
+   		-  	local aspect of the system saves the stakeholder time since they don't need to go out to buy items
+     	-	less clutter in household since community members share items
+      	-	brings back service sharing system by introducing services as an option and others can share what they have to exchange for it		 	
 -  **Indirect Stakeholders**
 	-  **Neighborhood Associations/Governing Boards:**
+ 		- 	can advertise this system to intice others to join the community  
 	-  **Environmental Advocates:**
-	-  **Stores:**
-	-  **Second-hand Marketplaces:**
+ 		- 	appreacite the reduce/reuse/recycle/share aspect of app
+   		-	can help spread the word of system so others can join 	
+	-  **Stores and Second-hand Marketplaces:**
+ 		- 	losing sells because of new sharing platform
 
 ## VSD Insights
 
