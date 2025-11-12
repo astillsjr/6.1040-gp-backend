@@ -1,3 +1,3 @@
-## Domain: Commuunity engangement and volunteer management
+## Domain: Commuunity Sharing and Sustainability
 
-This project lies in the domain of nonprofit operatiosna dn community sservice coordination. Small and medium-size nonprofit organizations (e.g., local shelters, enviromental groups, cultural associatons) often rely on volunteers to run events and deliver services. However, they frequently lack efficient digital tools to manage volunteers, especially tools that are affordable, easy to use, and tailored to their scale and needs.
+This project is part of the community sharing and sustainability domain since we want our focus on helping people within neighborhoods or communities to be able to share what they already have. Our focus is sharing anything from tools or supplies to even skills and services. The idea connects to the growing “sharing economy,” but on a smaller, more personal scale, since we are targetting closer to home. Instead of large platforms where users rarely know each other, this system aims to build real trust and connection between people who live near one another.

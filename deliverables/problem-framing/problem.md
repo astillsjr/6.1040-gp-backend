@@ -1,10 +1,3 @@
-## Problem: Small nonprofits and community groups struggle to coordinate volunteers effectively
+## Problem: Communities 
 
-Many grassroots organizations depend on volunteers to run events, fundraisers, and outreach programs, yet their coordination processes are typically manual (relying on email chains, spreadsheets, or social media groups). This leads to several challenges:
-
-- Difficulty tracking who has signed up for what event.
-- No easy way to communicate last-minute changes.
-- Limited visibility into volunteer engagement over time.
-- Frustration for both coordinators and volunteers, leading to lower participation.  
-
-The problem is not a lack of motivation but a lack of lightweight, structured digital infrastructure that fits their workflow.
+In many neighborhoods and communities, people will often buy tools or supplies, like a specific screwdriver or an exact shade of blue yarn, that they only use once or twice, while others nearby might already have what they need but have no easy way to share it. Renting from stores can be expensive and sometimes buying something in a small quantity is impossible. Sharing these items on social media, community pages, or even Craigslist is often unreliable and unorganized and it leads to a lot of useful items sitting unused. There’s no simple, community-focused system that lets people share, request, or offer tools, supplies, or small services in a safe and organized way. There is an obvious missing platform that could make it easier for people to support each other, reduce waste, and create stronger local connections.
