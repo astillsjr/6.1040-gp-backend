@@ -1,4 +1,5 @@
 ## Comparables
+
 Existing solutions and their shortcomings:
 | Comparable | Description | Limitation |
 |------------|-------------|------|
