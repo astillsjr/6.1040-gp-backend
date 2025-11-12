@@ -1,12 +1,13 @@
 ## Features
 
 ### User roles:
-- **Organization admins:** Create events, set volunteer capacity, message participants, track attendance.
-- **Volunteers:** Browse and sign up for events, manage availability, track their contributions.
+- **Resource sharers:** list items, set availability, schedule pick-ups, track usage.
+- **Resource seekers:** browse resources, request items, communicate with sharers.
 
 ### App features:
-1. **Event management dashboard:** Create, edit, and manage volunteer events with schedules and capacity limits.
-2. **Volunteer sign-up & profiles:** Allow volunteers to view opportunities, sign up, and track hours.
-3. **Real-time updates & notifications:** Use WebSockets or push notifications for changes or reminders.
-4. **Attendance & impact tracking:** View metrics like total hours volunteered or events participated in.
-5. **Feedback system:** Let volunteers and organizers rate or comment after events to improve engagement.
+1. **Item listing & availability calendar:** add resources with photos, description, and availability schedule.
+2. **Request & scheduling system:** book items, set pick-up/drop-off times.
+3. **User profiles & reputation system:** track borrowing/sharing history, ratings, and feedback.
+4. **Notifications & reminders:** alerts for approved requests, pick-up times, and overdue returns.
+5. **Search & filtering:** find resources by type, proximity, or availability.
+6. **Community dashboard:** overview of items shared, requests fulfilled, and environmental impact (e.g., CO2 saved by sharing).
