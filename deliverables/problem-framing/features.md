@@ -38,6 +38,10 @@
 - Integrated chat for coordinating pick-ups and resolving details.
 - Automated reminders for upcoming returns, overdue items, or item availability changes.
 
+**Community Dashboard**
+
+- Dorm-level leaderboards to encourage friendly competition in sustainability and participation.
+
 **Batch Requests & Community Sourcing**
 - Ability to create “micro-requests” for small quantities (e.g., “2 oz wood glue,” “3 ft of string”).
 - Option to crowdsource multiple small contributions from nearby students.
