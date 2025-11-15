@@ -5,7 +5,7 @@
 This project is part of the community sharing and sustainability domain since we want our focus on helping people within neighborhoods or communities to be able to share what they already have. Our focus is sharing anything from tools or supplies to even skills and services. The idea connects to the growing “sharing economy,” but on a smaller, more personal scale, since we are targetting closer to home. Instead of large platforms where users rarely know each other, this system aims to build real trust and connection between people who live near one another.
 
 
-**PROPOSED:**
+**New:**
 
 ## Domain: Campus Sustainability
 
