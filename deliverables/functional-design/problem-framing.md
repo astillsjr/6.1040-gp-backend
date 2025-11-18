@@ -1,1 +1,1 @@
-[Updated Problem Framing Sections](deliverables/problem-framing)
+[Updated Problem Framing Sections](../problem-framing)
