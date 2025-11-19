@@ -1,2 +1,3 @@
-![UI Sketches](https://github.com/user-attachments/files/23619072/New.Note.2025-03-22.20-49-26.6Y9.jpg)
-![UI Sketches](https://github.com/user-attachments/assets/df1e7fe9-a9bc-427e-b1cd-7765fb4683b9)
+![UI Sketches](https://github.com/user-attachments/assets/8b1983b6-e532-4880-a459-0f02e82fa627)
+
+![UI Sketches](https://github.com/user-attachments/assets/691779c6-29ce-4546-a329-d1608481c955)
