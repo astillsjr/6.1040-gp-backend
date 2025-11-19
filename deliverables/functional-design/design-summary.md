@@ -6,7 +6,7 @@ Our primary design goal with our project is to make a resource-sharing platform 
 
 ## Concepts
 
-Our features outlined in our problem framing revolve around eight different concepts that work together to accomplish this goal.
+Our features outlined in our problem framing revolve around ten different concepts that work together to accomplish this goal.
 
 -  Foundational User Concepts
 	-  UserAuthentication and UserProfile
