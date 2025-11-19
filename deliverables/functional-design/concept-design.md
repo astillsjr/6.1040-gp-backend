@@ -300,15 +300,16 @@
 
 ## Communication
 
-**concept**: Communication [User, BorrowRequest]  
+**concept**: Communication [User, Context]  
 **purpose**: To enable direct messaging between users for coordinating pickups, resolving details, and building community connections around item sharing.  
-**principle**: If a user sends a message to another user in the context of a borrowing request, then the recipient receives the message and can reply, enabling coordination without leaving the platform.  
+**principle**: If a user sends a message to another user in the context of a transaction (e.g., borrowing request, item claim), then the recipient receives the message and can reply, enabling coordination without leaving the platform.  
 **state**:
 
   * a set of Conversations with
     * a participant1 User
     * a participant2 User
-    * a context BorrowRequest
+    * a context Context
+    * a contextType String
     * a createdAt Date
     * a lastMessageAt Date
   * a set of Messages with
@@ -320,8 +321,8 @@
 
 **actions**:
 
-  * `createConversation (participant1: User, participant2: User, context: BorrowRequest): (conversation: Conversation)`
-    * **requires**: The participants must be different users. The context must exist. A conversation between these participants for this context must not already exist.
+  * `createConversation (participant1: User, participant2: User, context: Context, contextType: String): (conversation: Conversation)`
+    * **requires**: The participants must be different users. The context must exist. The contextType must be from a predefined set (e.g., "BORROW_REQUEST", "ITEM_CLAIM", "ITEM_CONTRIBUTION"). A conversation between these participants for this context must not already exist.
     * **effects**: Creates a new conversation.
   * `sendMessage (conversation: Conversation, sender: User, content: String): (message: Message)`
     * **requires**: The conversation must exist. The sender must be a participant in the conversation.
@@ -331,7 +332,7 @@
     * **effects**: Sets the readAt timestamp for the message.
 
 **notes**:
-  * Conversations are scoped to a BorrowRequest context to keep messaging organized and relevant. BorrowRequest is a generic type parameter since it's created by the Borrowing concept.
+  * Conversations are scoped to a generic Context (e.g., BorrowRequest, ItemClaim, Contribution) to keep messaging organized and relevant. The contextType field helps identify what type of entity the context refers to.
   * The concept doesn't handle delivery - that's the responsibility of the Notifications concept via syncs.
   * Read receipts are tracked per message to support unread message counts.
   * The concept is intentionally simple - no group chats or file attachments in the initial design.
@@ -380,6 +381,142 @@
   * Notification delivery (email/SMS) must be implemented within this concept - it cannot call out to other concepts.
   * The sendNotification system action is triggered by syncs or scheduled tasks when notifications are created.
   * Preferences allow users to control notification frequency and channels, though the initial implementation may support only email.
+
+---
+
+## ItemRequest
+
+**concept**: ItemRequest [User]  
+**purpose**: To enable users to request items they need that aren't currently listed, allowing the community to respond by offering items or crowdsourcing contributions, particularly useful for small quantities and one-off needs.  
+**principle**: If a user creates a request for a small quantity of an item (e.g., "2 oz wood glue"), then other users can see the request and either offer to provide the item from their own supply or contribute a portion, enabling community-sourced fulfillment of needs through multiple small contributions.  
+**state**:
+
+  * a set of ItemRequests with
+    * a requester User
+    * a title String
+    * a description String
+    * a category String
+    * a requestedQuantity String
+    * a urgency String
+    * a dormVisibility String
+    * a status of OPEN or PARTIALLY_FULFILLED or FULFILLED or CANCELLED or EXPIRED
+    * a createdAt Date
+    * a fulfilledAt Date
+    * a expiresAt Date
+  * a set of Contributions with
+    * a request ItemRequest
+    * a contributor User
+    * a contributedQuantity String
+    * a status of PENDING or ACCEPTED or REJECTED or CANCELLED
+    * a createdAt Date
+    * a acceptedAt Date
+    * a notes String
+
+**actions**:
+
+  * `createRequest (requester: User, title: String, description: String, category: String, requestedQuantity: String, urgency: String, dormVisibility: String, expiresAt: DateTime): (request: ItemRequest)`
+    * **requires**: The requester must exist. The category must be from a predefined set. The urgency must be from a predefined set (e.g., LOW, MEDIUM, HIGH, URGENT). The dormVisibility must be either a specific dorm name or "ALL". The expiresAt must be in the future.
+    * **effects**: Creates a new item request with status OPEN.
+  * `offerContribution (request: ItemRequest, contributor: User, contributedQuantity: String, notes: String): (contribution: Contribution)`
+    * **requires**: The request must be in OPEN or PARTIALLY_FULFILLED status. The request must not be expired. The contributor must not be the requester. The contributedQuantity must be provided.
+    * **effects**: Creates a new contribution with status PENDING.
+  * `acceptContribution (request: ItemRequest, contribution: Contribution): ()`
+    * **requires**: The contribution must be in PENDING status. The requester must be the request's requester. The request must not be FULFILLED or CANCELLED or EXPIRED.
+    * **effects**: Sets the contribution status to ACCEPTED and records the acceptedAt timestamp. If the combined accepted contributions fulfill the request, sets the request status to FULFILLED and records fulfilledAt. Otherwise, sets the request status to PARTIALLY_FULFILLED.
+  * `rejectContribution (request: ItemRequest, contribution: Contribution): ()`
+    * **requires**: The contribution must be in PENDING status. The requester must be the request's requester.
+    * **effects**: Sets the contribution status to REJECTED.
+  * `cancelContribution (contribution: Contribution): ()`
+    * **requires**: The contribution must be in PENDING status. The contributor must be the contribution's contributor.
+    * **effects**: Sets the contribution status to CANCELLED.
+  * `cancelRequest (request: ItemRequest): ()`
+    * **requires**: The request must be in OPEN or PARTIALLY_FULFILLED status. The requester must be the request's requester.
+    * **effects**: Sets the request status to CANCELLED and cancels all pending contributions.
+  * `expireRequest (request: ItemRequest): ()`
+    * **system**
+    * **requires**: The request must be in OPEN or PARTIALLY_FULFILLED status. The current time must be after expiresAt.
+    * **effects**: Sets the request status to EXPIRED.
+
+**notes**:
+  * Quantities are stored as strings (e.g., "2 oz", "3 ft") to support various units and partial quantities, which is essential for micro-requests and batch sourcing.
+  * Multiple contributions can be accepted for batch requests where the total needed is crowdsourced from multiple users.
+  * The concept tracks whether contributions fulfill the request, but actual quantity matching logic may need to be flexible (e.g., "2 oz" + "1 oz" might fulfill a "3 oz" request).
+  * When a contribution is accepted, syncs can trigger creation of an ItemListing entry or a Borrowing request flow.
+  * Urgency helps prioritize requests in search/display, especially useful for time-sensitive lab or project needs.
+  * Dorm visibility allows requests to be seen only by nearby students, supporting localized community sourcing.
+
+---
+
+## ItemTransfer
+
+**concept**: ItemTransfer [User, Item]  
+**purpose**: To facilitate permanent transfers of items (free items, lost-and-found returns, and upcycled goods) that don't require return, reducing waste and enabling direct item redistribution within the community.  
+**principle**: If a user marks an item as free or finds a lost item and posts it, then interested users can claim it for permanent transfer, completing the transaction immediately without scheduling or return logistics.  
+**state**:
+
+  * a set of Items with
+    * a transferType of FREE or LOST_AND_FOUND or UPCYCLE
+    * a postedBy User
+    * a title String
+    * a description String
+    * a category String
+    * a condition String
+    * a location String
+    * a dormVisibility String
+    * a status of AVAILABLE or PENDING or CLAIMED or EXPIRED or REMOVED
+    * a postedAt Date
+    * a claimedAt Date
+    * a expiresAt Date
+  * a set of Claims with
+    * an item Item
+    * a claimer User
+    * a status of PENDING or APPROVED or REJECTED or CANCELLED
+    * a createdAt Date
+    * a approvedAt Date
+    * a pickupLocation String
+    * a notes String
+
+**actions**:
+
+  * `postFreeItem (postedBy: User, title: String, description: String, category: String, condition: String, location: String, dormVisibility: String, expiresAt: DateTime): (item: Item)`
+    * **requires**: The postedBy must exist. The category must be from a predefined set. The condition must be from a predefined set. The dormVisibility must be either a specific dorm name or "ALL". The expiresAt must be in the future.
+    * **effects**: Creates a new item with transferType FREE and status AVAILABLE.
+  * `postLostItem (postedBy: User, title: String, description: String, category: String, location: String, dormVisibility: String, expiresAt: DateTime): (item: Item)`
+    * **requires**: The postedBy must exist. The category must be from a predefined set. The dormVisibility must be either a specific dorm name or "ALL". The expiresAt must be in the future.
+    * **effects**: Creates a new item with transferType LOST_AND_FOUND and status AVAILABLE.
+  * `postUpcycleItem (postedBy: User, title: String, description: String, category: String, condition: String, location: String, dormVisibility: String, expiresAt: DateTime): (item: Item)`
+    * **requires**: The postedBy must exist. The category must be from a predefined set. The condition must be from a predefined set. The dormVisibility must be either a specific dorm name or "ALL". The expiresAt must be in the future.
+    * **effects**: Creates a new item with transferType UPCYCLE and status AVAILABLE.
+  * `claimItem (item: Item, claimer: User, pickupLocation: String, notes: String): (claim: Claim)`
+    * **requires**: The item must be in AVAILABLE status and not expired. The claimer must not be the item's postedBy. The item must not already have a pending claim.
+    * **effects**: Creates a new claim with status PENDING and sets the item status to PENDING.
+  * `approveClaim (item: Item, claim: Claim): ()`
+    * **requires**: The claim must be in PENDING status. The item must be in PENDING status. The user must be the item's postedBy.
+    * **effects**: Sets the claim status to APPROVED, sets the item status to CLAIMED, and records the approvedAt and claimedAt timestamps.
+  * `rejectClaim (item: Item, claim: Claim): ()`
+    * **requires**: The claim must be in PENDING status. The item must be in PENDING status. The user must be the item's postedBy.
+    * **effects**: Sets the claim status to REJECTED and sets the item status back to AVAILABLE.
+  * `cancelClaim (claim: Claim): ()`
+    * **requires**: The claim must be in PENDING status. The user must be the claim's claimer.
+    * **effects**: Sets the claim status to CANCELLED and sets the item status back to AVAILABLE.
+  * `completeTransfer (item: Item, claim: Claim): ()`
+    * **requires**: The claim must be in APPROVED status. The item must be in CLAIMED status. Either the postedBy or claimer can complete the transfer.
+    * **effects**: Marks the transfer as complete. The item can be removed from the system or archived.
+  * `removeItem (item: Item): ()`
+    * **requires**: The item must exist. The user must be the item's postedBy.
+    * **effects**: Sets the item status to REMOVED, permanently removing it from the system.
+  * `expireItem (item: Item): ()`
+    * **system**
+    * **requires**: The item must be in AVAILABLE status. The current time must be after expiresAt.
+    * **effects**: Sets the item status to EXPIRED.
+
+**notes**:
+  * This concept handles permanent transfers, which is fundamentally different from Borrowing (temporary loans).
+  * Lost-and-found items may not have condition ratings, so the postLostItem action doesn't require a condition field.
+  * The first-come-first-served nature means only one pending claim is allowed per item at a time.
+  * Once a claim is approved, the item is marked as CLAIMED, though the actual physical transfer completion is tracked separately.
+  * This concept supports the sustainability goal by making it easy to give away items rather than discard them.
+  * Syncs can connect this to rewards (e.g., points for posting free items) and notifications (e.g., alerting users about new free items in their dorm).
 
 ---
 
@@ -449,7 +586,7 @@
 **sync**: ConversationCreationOnRequest  
 **when**: Borrowing.requestBorrow (request: BorrowRequest)  
 **where**: in Borrowing: borrower of request is borrower, item of request is item, in ItemListing: owner of item is lender  
-**then**: Communication.createConversation (participant1: borrower, participant2: lender, context: request)  
+**then**: Communication.createConversation (participant1: borrower, participant2: lender, context: request, contextType: "BORROW_REQUEST")  
 **notes**: Automatically create a conversation when a borrow request is made, enabling immediate communication between parties.
 
 ---
@@ -521,3 +658,113 @@
 **where**: in Borrowing: borrower of request is borrower, item of request is item, in ItemListing: owner of item is lender  
 **then**: Notifications.createNotification (recipient: borrower, type: "REVIEW_REMINDER", title: String, content: String), Notifications.createNotification (recipient: lender, type: "REVIEW_REMINDER", title: String, content: String)  
 **notes**: Remind both parties to leave reviews after a transaction completes. This encourages review submission and helps build the reputation system.
+
+---
+
+## ItemRequestCreatedNotification
+
+**sync**: ItemRequestCreatedNotification  
+**when**: ItemRequest.createRequest (request: ItemRequest)  
+**where**: in ItemRequest: dormVisibility of request is dormVisibility, requester of request is requester  
+**then**: Notifications.createNotification (recipient: User, type: "NEW_ITEM_REQUEST", title: String, content: String)  
+**notes**: Notify relevant users (based on dorm visibility) when a new item request is created in their area. This helps surface requests to potential contributors. **ISSUE**: Need to determine how to identify all users in a specific dorm for dorm-specific notifications - may require querying UserProfile concept state.
+
+---
+
+## ContributionOfferedNotification
+
+**sync**: ContributionOfferedNotification  
+**when**: ItemRequest.offerContribution (contribution: Contribution)  
+**where**: in ItemRequest: request of contribution is request, requester of request is requester  
+**then**: Notifications.createNotification (recipient: requester, type: "CONTRIBUTION_OFFERED", title: String, content: String)  
+**notes**: Notify the requester when someone offers a contribution to their request.
+
+---
+
+## ContributionAcceptedNotification
+
+**sync**: ContributionAcceptedNotification  
+**when**: ItemRequest.acceptContribution (contribution: Contribution)  
+**where**: in ItemRequest: contributor of contribution is contributor  
+**then**: Notifications.createNotification (recipient: contributor, type: "CONTRIBUTION_ACCEPTED", title: String, content: String)  
+**notes**: Notify the contributor when their contribution is accepted.
+
+---
+
+## ItemRequestFulfilledNotification
+
+**sync**: ItemRequestFulfilledNotification  
+**when**: ItemRequest.acceptContribution (contribution: Contribution)  
+**where**: in ItemRequest: request of contribution is request, status of request is FULFILLED, requester of request is requester  
+**then**: Notifications.createNotification (recipient: requester, type: "REQUEST_FULFILLED", title: String, content: String)  
+**notes**: Notify the requester when their request is fully fulfilled. This sync fires when accepting a contribution that completes the request.
+
+---
+
+## ItemRequestContributionReward
+
+**sync**: ItemRequestContributionReward  
+**when**: ItemRequest.acceptContribution (contribution: Contribution)  
+**where**: in ItemRequest: contributor of contribution is contributor  
+**then**: Rewards.awardPoints (user: contributor, amount: Number, reason: String)  
+**notes**: Award points to users who contribute items to fulfill requests, incentivizing community sourcing. **ISSUE**: Need to determine point calculation - could be based on quantity or fixed amount per contribution.
+
+---
+
+## FreeItemPostedNotification
+
+**sync**: FreeItemPostedNotification  
+**when**: ItemTransfer.postFreeItem (item: Item), ItemTransfer.postUpcycleItem (item: Item)  
+**where**: in ItemTransfer: dormVisibility of item is dormVisibility  
+**then**: Notifications.createNotification (recipient: User, type: "NEW_FREE_ITEM", title: String, content: String)  
+**notes**: Notify relevant users (based on dorm visibility) when a new free or upcycle item is posted. This helps surface available items. **ISSUE**: Same dorm visibility notification issue as ItemRequestCreatedNotification.
+
+---
+
+## LostItemPostedNotification
+
+**sync**: LostItemPostedNotification  
+**when**: ItemTransfer.postLostItem (item: Item)  
+**where**: in ItemTransfer: dormVisibility of item is dormVisibility  
+**then**: Notifications.createNotification (recipient: User, type: "NEW_LOST_ITEM", title: String, content: String)  
+**notes**: Notify relevant users when a lost item is posted, helping reunite items with their owners. **ISSUE**: Same dorm visibility notification issue.
+
+---
+
+## ItemClaimedNotification
+
+**sync**: ItemClaimedNotification  
+**when**: ItemTransfer.claimItem (claim: Claim)  
+**where**: in ItemTransfer: item of claim is item, postedBy of item is postedBy  
+**then**: Notifications.createNotification (recipient: postedBy, type: "ITEM_CLAIMED", title: String, content: String)  
+**notes**: Notify the item poster when someone claims their free/lost/upcycle item.
+
+---
+
+## ItemClaimApprovedNotification
+
+**sync**: ItemClaimApprovedNotification  
+**when**: ItemTransfer.approveClaim (claim: Claim)  
+**where**: in ItemTransfer: claimer of claim is claimer  
+**then**: Notifications.createNotification (recipient: claimer, type: "CLAIM_APPROVED", title: String, content: String)  
+**notes**: Notify the claimer when their claim is approved.
+
+---
+
+## FreeItemPostingReward
+
+**sync**: FreeItemPostingReward  
+**when**: ItemTransfer.completeTransfer (item: Item, claim: Claim)  
+**where**: in ItemTransfer: transferType of item is FREE or UPCYCLE, postedBy of item is postedBy  
+**then**: Rewards.awardPoints (user: postedBy, amount: Number, reason: String)  
+**notes**: Award points to users who successfully complete free item or upcycle transfers, incentivizing waste reduction. **ISSUE**: Need to determine point calculation for free item postings.
+
+---
+
+## ItemTransferConversation
+
+**sync**: ItemTransferConversation  
+**when**: ItemTransfer.claimItem (claim: Claim)  
+**where**: in ItemTransfer: item of claim is item, claimer of claim is claimer, postedBy of item is postedBy  
+**then**: Communication.createConversation (participant1: claimer, participant2: postedBy, context: claim, contextType: "ITEM_CLAIM")  
+**notes**: Create a conversation when an item is claimed to enable coordination between the claimer and the item poster.
