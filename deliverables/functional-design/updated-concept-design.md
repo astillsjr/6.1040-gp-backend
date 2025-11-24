@@ -211,14 +211,14 @@
 
 ---
 
-## Requesting
+## ItemRequesting
 
-**concept**: Requesting [User, Item]
+**concept**: ItemRequesting [User, Item]
 **purpose**: To enable users to formally express interest in an item, whether it's to borrow a listed item, claim a free one, or source a new one from the community.
 **principle**: If a user finds an item they need, they can create a request. The item's owner is then notified and can choose to accept or reject the request, initiating a transaction.
 
 **state**:
-* a set of Requests with
+* a set of ItemRequests with
 	* a requester User
 	* an item Item
 	* a type of BORROW or TRANSFER or ITEM
