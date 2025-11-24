@@ -1,3 +1,12 @@
+---
+timestamp: 'Mon Nov 24 2025 15:54:02 GMT-0500 (Eastern Standard Time)'
+parent: '[[..\20251124_155402.5a895931.md]]'
+content_id: 464d6de8441a344fed0a9a170a72e3375e1859bfbcca1d472a2f13c3ab615154
+---
+
+# file: src/concepts/userprofile/UserProfileConcept.test.ts
+
+```typescript
 import { assertEquals, assertExists, assertNotEquals } from "jsr:@std/assert";
 import { testDb } from "@utils/database.ts";
 import { ID } from "@utils/types.ts";
@@ -111,3 +120,4 @@ Deno.test("UserProfile Concept", async (t) => {
 
   await client.close();
 });
+```

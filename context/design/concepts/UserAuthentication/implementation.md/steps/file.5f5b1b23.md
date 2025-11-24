@@ -1,3 +1,12 @@
+---
+timestamp: 'Mon Nov 24 2025 15:39:41 GMT-0500 (Eastern Standard Time)'
+parent: '[[..\20251124_153941.4c8acb83.md]]'
+content_id: 5f5b1b230f2fe53ab0c1b7249982aefbb45183d1c93091be1e595b83ab5fafd1
+---
+
+# file: src\concepts\UserAuthentication\UserAuthenticationConcept.ts
+
+```typescript
 import { Collection, Db } from "npm:mongodb";
 import { create, getNumericDate, verify } from "https://deno.land/x/djwt@v3.0.1/mod.ts";
 import * as bcrypt from "https://deno.land/x/bcrypt@v0.4.1/mod.ts";
@@ -260,3 +269,4 @@ export default class UserAuthenticationConcept {
     return {};
   }
 }
+```

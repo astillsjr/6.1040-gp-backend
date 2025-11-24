@@ -1,3 +1,12 @@
+---
+timestamp: 'Mon Nov 24 2025 14:11:48 GMT-0500 (Eastern Standard Time)'
+parent: '[[..\20251124_141148.3c4abec9.md]]'
+content_id: 03f6d1598618c78506e22301eb1ef19e08203ca64786eb7409ac8323ba2aa5e3
+---
+
+# file: src/concepts/UserAuthentication/UserAuthenticationConcept.test.ts
+
+```typescript
 import { assertEquals, assertExists, assertNotEquals } from "jsr:@std/assert";
 import { testDb } from "@utils/database.ts";
 import UserAuthenticationConcept from "./UserAuthenticationConcept.ts";
@@ -164,7 +173,7 @@ Deno.test("UserAuthentication Concept", async (t) => {
     const deleteResult = await auth.deleteAccount({ accessToken: newAccessToken, password: "principlePassword" });
     assertEquals("error" in deleteResult, false, "Principle user account deletion should succeed.");
     
-    const userAfterDelete = await db.collection("UserAuthentication.users").findOne({ _id: new Object(userId) });
+    const userAfterDelete = await db.collection("UserAuthentication.users").findOne({ _id: userId });
     assertEquals(userAfterDelete, null, "User document should be deleted.");
     const sessionsAfterDelete = await db.collection("UserAuthentication.sessions").countDocuments({ user: userId });
     assertEquals(sessionsAfterDelete, 0, "All user sessions should be deleted.");
@@ -175,3 +184,4 @@ Deno.test("UserAuthentication Concept", async (t) => {
 
   await client.close();
 });
+```

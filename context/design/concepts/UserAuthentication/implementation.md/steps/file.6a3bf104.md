@@ -1,3 +1,12 @@
+---
+timestamp: 'Mon Nov 24 2025 14:19:44 GMT-0500 (Eastern Standard Time)'
+parent: '[[..\20251124_141944.96b4b926.md]]'
+content_id: 6a3bf1040b3b4a0dc652bd37a5e8b855db85eabbce6473534db542b8ecd4af10
+---
+
+# file: src/concepts/UserAuthentication/UserAuthenticationConcept.test.ts
+
+```typescript
 import { assertEquals, assertExists, assertNotEquals } from "jsr:@std/assert";
 import { testDb } from "@utils/database.ts";
 import UserAuthenticationConcept from "./UserAuthenticationConcept.ts";
@@ -141,7 +150,7 @@ Deno.test("UserAuthentication Concept", async (t) => {
         email: "principle@example.com",
     });
     assertNotEquals("error" in registerResult, true, "Principle user registration should succeed.");
-    const { user: userId, accessToken, refreshToken } = registerResult as {user: string, accessToken: string, refreshToken: string};
+    const { user, accessToken, refreshToken } = registerResult as {user: string, accessToken: string, refreshToken: string};
     console.log("    - Registered successfully.");
 
     // 2. They log out, their session ends
@@ -156,7 +165,7 @@ Deno.test("UserAuthentication Concept", async (t) => {
     console.log("  Step 3: User 'principleUser' logs back in.");
     const loginResult = await auth.login({ username: "principleUser", password: "principlePassword" });
     assertNotEquals("error" in loginResult, true, "Principle user login should succeed.");
-    const { accessToken: newAccessToken, refreshToken: newRefreshToken } = loginResult as {accessToken: string, refreshToken: string};
+    const { accessToken: newAccessToken } = loginResult as {accessToken: string, refreshToken: string};
     console.log("    - Logged in successfully, new session created.");
 
     // 4. They can perform an authenticated action (delete account)
@@ -164,9 +173,9 @@ Deno.test("UserAuthentication Concept", async (t) => {
     const deleteResult = await auth.deleteAccount({ accessToken: newAccessToken, password: "principlePassword" });
     assertEquals("error" in deleteResult, false, "Principle user account deletion should succeed.");
     
-    const userAfterDelete = await db.collection("UserAuthentication.users").findOne({ _id: new Object(userId) });
+    const userAfterDelete = await db.collection("UserAuthentication.users").findOne({ _id: user });
     assertEquals(userAfterDelete, null, "User document should be deleted.");
-    const sessionsAfterDelete = await db.collection("UserAuthentication.sessions").countDocuments({ user: userId });
+    const sessionsAfterDelete = await db.collection("UserAuthentication.sessions").countDocuments({ user: user });
     assertEquals(sessionsAfterDelete, 0, "All user sessions should be deleted.");
     console.log("    - Account and all associated data deleted successfully.");
 
@@ -175,3 +184,4 @@ Deno.test("UserAuthentication Concept", async (t) => {
 
   await client.close();
 });
+```

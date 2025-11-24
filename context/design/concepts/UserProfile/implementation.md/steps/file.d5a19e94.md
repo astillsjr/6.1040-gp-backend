@@ -1,3 +1,12 @@
+---
+timestamp: 'Mon Nov 24 2025 15:54:02 GMT-0500 (Eastern Standard Time)'
+parent: '[[..\20251124_155402.5a895931.md]]'
+content_id: d5a19e94a3c7e210dcac36cf99e56f54d20dd204ffc38afb258360951973e934
+---
+
+# file: src/concepts/userprofile/UserProfileConcept.ts
+
+```typescript
 import { Collection, Db } from "npm:mongodb";
 import { Empty, ID } from "@utils/types.ts";
 
@@ -158,3 +167,4 @@ export default class UserProfileConcept {
     return results.map((doc) => ({ user: doc._id, displayName: doc.displayName }));
   }
 }
+```
