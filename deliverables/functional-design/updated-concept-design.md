@@ -77,8 +77,6 @@
   * Dorm information is critical for the "dorm-specific visibility" feature and proximity-based recommendations.
   * Display name is separate from username to allow users to present themselves differently in the community.
 
-
-
 ---
 
 ## Item

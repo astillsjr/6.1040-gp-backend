@@ -1,0 +1,49 @@
+# ItemListing
+
+**concept**: ItemListing [Item]
+**purpose**: To manage the public catalog of items available for borrowing or permanent transfer, including their availability, photos, and visibility rules.
+**principle**: If a user lists an item, specifying whether it's for borrowing or a free transfer, then other users can discover it through search, view its details and availability, and decide whether to request it.
+
+**state**:
+* a set of Items with
+	* a type of BORROW or TRANSFER
+	* a status of AVAILABLE or PENDING or CLAIMED or EXPIRED
+	* a dormVisibility String
+* a set of ItemPhotos with
+	* an item Item
+	* a photoUrl String
+	* an order Number
+* a set of AvailabilityWindows with
+	* an item Item
+	* a startTime DateTime
+	* an endTime DateTime
+	* a status of AVAILABLE or RESERVED
+
+**actions**:
+* `listItem (item: Item, type: BORROW or TRANSFER, dormVisibility: String): ()`
+	* **requires**: The item must not already be listed.
+	* **effects**: Makes an item visible in the catalog with status AVAILABLE.
+* `unlistItem (item: Item): ()`
+	* **requires**: The item must be listed.
+	* **effects**: Removes an item from the catalog, setting its status to EXPIRED (or similar non-visible state).
+*   `updateListingDetails(item: Item, dormVisibility: String, type: BORROW or TRANSFER)`
+	*   **requires**: The `item` must be listed.
+	*   **effects**: Updates the `dormVisibility` and `type` fields for the item's listing.
+* `addPhoto (item: Item, photoUrl: String, order: Number): ()`
+	* **requires**: The item must exist.
+	* **effects**: Adds a photo to the item.
+*   `removePhoto(item: Item, photoUrl: String)`
+	*   **requires**: An `ItemPhoto` record must exist for the given `item` and `photoUrl`.
+	*   **effects**: Removes the `ItemPhoto` record.
+* `setAvailability (item: Item, startTime: DateTime, endTime: DateTime): (window: AvailabilityWindow)`
+	* **requires**: The item must be listed with type BORROW. The window must not overlap with existing windows.
+	* **effects**: Creates a new availability window for a borrowable item.
+* `updateListingStatus (item: Item, status: AVAILABLE or PENDING or CLAIMED): ()`
+	* **requires**: The item must be listed.
+	* **effects**: Updates the status of the listing (e.g., to PENDING when a request is made).
+* `reserveWindow (window: AvailabilityWindow): ()`
+	* **requires**: The window must have status AVAILABLE.
+	* **effects**: Sets the window status to RESERVED.
+*   `removeAvailability(window: AvailabilityWindow)`
+	*   **requires**: The `window` must exist and its status must not be `RESERVED`.
+	*   **effects**: Removes the `AvailabilityWindow` record.
