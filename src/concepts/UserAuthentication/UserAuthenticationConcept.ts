@@ -116,7 +116,8 @@ export default class UserAuthenticationConcept {
     }
 
     // Effect: Creates a new user record with a hashed password
-    const hashedPassword = await bcrypt.hash(password, 10);
+    const salt = await bcrypt.genSalt(10);
+    const hashedPassword = await bcrypt.hash(password, salt);
     const newUser: UserDoc = {
       _id: freshID(),
       username,
@@ -240,7 +241,8 @@ export default class UserAuthenticationConcept {
     }
 
     // Effect: Updates the user's stored password hash to the new password.
-    const newHashedPassword = await bcrypt.hash(newPassword, 10);
+    const salt = await bcrypt.genSalt(10);
+    const newHashedPassword = await bcrypt.hash(newPassword, salt);
     await this.users.updateOne({ _id: userId }, { $set: { hashedPassword: newHashedPassword } });
 
     return {};
