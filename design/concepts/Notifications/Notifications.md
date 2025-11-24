@@ -5,7 +5,8 @@
 **principle**: If a borrowing request is approved and the pickup time is approaching, then the borrower receives a reminder notification, helping ensure timely coordination.  
 
 **state**:
-  * a set of Users with
+  * a set of UserNotificationSettings with
+    * a user User
     * an email String
     * a phoneNumber String
     * a notificationPreferences String

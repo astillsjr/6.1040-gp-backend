@@ -10,20 +10,20 @@
     * a dorm String
     * a bio String
     * a createdAt Date
-    * a lenderScore number
-    * a borrowerScoreNumber
+    * a lenderScore Number
+    * a borrowerScore Number
 
 **actions**:
   * `createProfile (user: User, displayName: String, dorm: String): (profile: User)`
-	* **requires**: The user must not already have a profile. The dorm must be a valid MIT dorm name.
-	* **effects**: Creates a profile for the user with the provided display name and dorm, initializing scores to 0.
-* `updateProfile (user: User, displayName: String, dorm: String, bio: String)`
-	* **requires**: The user must have an existing profile.
-	* **effects**: Updates the user's profile information.
-* `updateScores (user: User, lenderScore: Number, borrowerScore: Number)`
-  * **system**
-	* **requires**: The user must have a profile.
-	* **effects**: Updates the stored reputation scores for the user.
+	  * **requires**: The user must not already have a profile. The dorm must be a valid MIT dorm name.
+	  * **effects**: Creates a profile for the user with the provided display name and dorm, initializing scores to 0.
+  * `updateProfile (user: User, displayName: String, dorm: String, bio: String)`
+	  * **requires**: The user must have an existing profile.
+	  * **effects**: Updates the user's profile information.
+  * `updateScores (user: User, lenderScore: Number, borrowerScore: Number)`
+    * **system**
+	  * **requires**: The user must have a profile.
+	  * **effects**: Updates the stored reputation scores for the user.
   * `getProfile (user: User): (displayName: String, dorm: String, bio: String, lenderScore: number, borrowerScore: number)`
     * **requires**: The user must have a profile.
     * **effects**: Returns the user's profile information.
