@@ -5,14 +5,18 @@ import { freshID } from "@utils/database.ts";
 import { Empty, ID } from "@utils/types.ts";
 
 // Collection prefix for this concept
-const PREFIX = "UserAuthentication.";
+const PREFIX = "UserAuthentication" + ".";
 
 // Generic ID types for this concept
 type User = ID;
 type Session = ID;
 
 // Constants for token management
-const JWT_SECRET = Deno.env.get("JWT_SECRET") || "default-secret-key-for-dev";
+const JWT_SECRET = Deno.env.get("JWT_SECRET");
+if (!JWT_SECRET) {
+  throw new Error("JWT_SECRET is not set in the environment");
+}
+
 let _key: CryptoKey | null = null;
 const getKey = async () => {
   if (_key) return _key;
@@ -25,6 +29,7 @@ const getKey = async () => {
   );
   return _key;
 };
+
 const ACCESS_TOKEN_EXPIRATION_MINUTES = 15;
 const REFRESH_TOKEN_EXPIRATION_DAYS = 7;
 
@@ -72,6 +77,206 @@ export default class UserAuthenticationConcept {
   constructor(private readonly db: Db) {
     this.users = this.db.collection(PREFIX + "users");
     this.sessions = this.db.collection(PREFIX + "sessions");
+
+    this.users.createIndex({ username: 1 }, { unique: true }).catch((err) => {
+      console.error("Error creating username index:", err);
+    });
+    
+    this.users.createIndex({ email: 1 }, { unique: true }).catch((err) => {
+      console.error("Error creating email index:", err);
+    });
+
+    this.sessions.createIndex({ refreshToken: 1 }, { unique: true }).catch((err) => {
+      console.error("Error creating refresh token index:", err);
+    });
+  }
+
+  /**
+   * Register a new user.
+   * @requires The provided email and username must not already exist. 
+   *           The email must be in valid format.
+   *           The password must be at least 8 characters long (potentially implement later).
+   * @effects Creates a new user record with a hashed password and returns a new pair of session tokens.
+   */
+  async register(
+    { username, password, email }: { username: string; password: string; email: string },
+  ): Promise<{ user: User; accessToken: string; refreshToken: string } | { error: string }> {
+    // Normalize email: trim whitespace and convert to lowercase
+    const normalizedEmail = email.trim().toLowerCase();
+
+    // Requirement: email must be in valid format
+    if (!EMAIL_REGEX.test(normalizedEmail)) {
+      return { error: "Invalid email format." };
+    }
+
+    // Requirement: username and email must not already exist
+    const existingUser = await this.users.findOne({ $or: [{ username }, { email: normalizedEmail }] });
+    if (existingUser) {
+      return { error: "Username or email already exists." };
+    }
+
+    // Effect: Creates a new user record with a hashed password
+    const hashedPassword = await bcrypt.hash(password, 10);
+    const newUser: UserDoc = {
+      _id: freshID(),
+      username,
+      hashedPassword,
+      email: normalizedEmail,
+      createdAt: new Date(),
+    };
+    await this.users.insertOne(newUser);
+
+    // Effect: returns a new pair of session tokens
+    const tokens = await this.createTokenPair(newUser._id);
+
+    return { user: newUser._id, ...tokens };
+  }
+
+  /**
+   * Logs in an existing user.
+   * @requires The provided username and password must match an existing user account.
+   * @effects Creates a new session and returns a new pair of access and refresh tokens for the authenticated user.
+   */
+  async login(
+    { username, password }: { username: string; password: string }
+  ): Promise<{ accessToken: string; refreshToken: string } | { error: string }> {
+    // Requirement: username must match an existing user
+    const user = await this.users.findOne({ username });
+    if (!user) {
+      return { error: "Invalid username or password." };
+    }
+
+    // Requirement: password must match
+    const passwordMatch = await bcrypt.compare(password, user.hashedPassword);
+    if (!passwordMatch) {
+      return { error: "Invalid username or password." };
+    }
+
+    // Effect: Creates a new session and returns a new pair of tokens
+    const tokens = await this.createTokenPair(user._id);
+    return tokens;
+  }
+
+  /**
+   * Refresh an access token.
+   * @requires A valid and non-expired refresh token must be provided.
+   * @effects Generates and returns a new short-lived access token.
+   */
+  async refreshAccessToken(
+    { refreshToken }: { refreshToken: string }
+  ): Promise<{ accessToken: string } | { error: string }> {
+    // Requirement: A valid and non-expired refresh token must be provided.
+    const session = await this.sessions.findOne({ refreshToken });
+    if (!session) {
+      return { error: "Invalid or expired refresh token." };
+    }
+
+    // Check if session has expired
+    if (session.expiresAt < new Date()) {
+      // Clean up expired session
+      await this.sessions.deleteOne({ refreshToken });
+      return { error: "Invalid or expired refresh token." };
+    }
+
+    // Effect: Generates and returns a new short-lived access token.
+    const key = await getKey();
+    const now = new Date();
+    const accessToken = await create(
+      { alg: "HS256", typ: "JWT" },
+      {
+        sub: session.user,
+        iat: getNumericDate(now),
+        exp: getNumericDate(new Date(now.getTime() + ACCESS_TOKEN_EXPIRATION_MINUTES * 60 * 1000)),
+      },
+      key,
+    );
+
+    return { accessToken };
+  }
+
+  /**
+   * Logs out a user. 
+   * @requires A valid refresh token must be provided.
+   * @effects Invalidates the user's current refresh token, ending their session.
+   */
+  async logout(
+    { refreshToken }: { refreshToken: string }
+  ): Promise<Empty | { error: string }> {
+    // Requirement: A valid refresh token must be provided.
+    // Effect: Invalidates the token by deleting the session.
+    const result = await this.sessions.deleteOne({ refreshToken });
+
+    if (result.deletedCount === 0) {
+      return { error: "Invalid or expired refresh token." };
+    }
+
+    return {};
+  }
+
+  /**
+   * Change a user's password.
+   * @requires A valid access token must be provided. 
+   *           The old password must match the user's current password.
+   * @effects Updates the user's stored password hash to the new password.
+   */
+  async changePassword(
+    { accessToken, oldPassword, newPassword }: { accessToken: string; oldPassword: string; newPassword: string },
+  ): Promise<Empty | { error: string }> {
+    // Requirement: A valid access token must be provided.
+    const userId = await this.getUserIdFromAccessToken(accessToken);
+    if (!userId) {
+      return { error: "Invalid or expired access token." };
+    }
+
+    const user = await this.users.findOne({ _id: userId });
+    if (!user) {
+      return { error: "User not found." };
+    }
+
+    // Requirement: The old password must match the user's current password.
+    const passwordMatch = await bcrypt.compare(oldPassword, user.hashedPassword);
+    if (!passwordMatch) {
+      return { error: "Incorrect old password." };
+    }
+
+    // Effect: Updates the user's stored password hash to the new password.
+    const newHashedPassword = await bcrypt.hash(newPassword, 10);
+    await this.users.updateOne({ _id: userId }, { $set: { hashedPassword: newHashedPassword } });
+
+    return {};
+  }
+
+  /**
+   * Delete an existing user account.
+   * @requires A valid access token must be provided. 
+   *           The provided password matches the user's current password.
+   * @effects Permanently removes the user's account and all associated sessions.
+   */
+  async deleteAccount(
+    { accessToken, password }: { accessToken: string; password: string }
+  ): Promise<Empty | { error: string }> {
+    // Requirement: A valid access token must be provided.
+    const userId = await this.getUserIdFromAccessToken(accessToken);
+    if (!userId) {
+      return { error: "Invalid or expired access token." };
+    }
+
+    const user = await this.users.findOne({ _id: userId });
+    if (!user) {
+      return { error: "User not found." };
+    }
+
+    // Requirement: The provided password matches the user's current password.
+    const passwordMatch = await bcrypt.compare(password, user.hashedPassword);
+    if (!passwordMatch) {
+      return { error: "Incorrect password." };
+    }
+
+    // Effect: Permanently removes the user's account and all associated sessions.
+    await this.users.deleteOne({ _id: userId });
+    await this.sessions.deleteMany({ user: userId });
+
+    return {};
   }
 
   /**
@@ -115,148 +320,5 @@ export default class UserAuthenticationConcept {
     } catch {
       return null;
     }
-  }
-
-  /**
-   * register (username: String, password: String, email: String): (user: User, accessToken: String, refreshToken: String)
-   *
-   * **requires**: The provided email and username must not already exist. The email must be in valid format.
-   * **effects**: Creates a new user record with a hashed password and returns a new pair of session tokens.
-   */
-  async register(
-    { username, password, email }: { username: string; password: string; email: string },
-  ): Promise<{ user: User; accessToken: string; refreshToken: string } | { error: string }> {
-    // Requirement: email must be in valid format
-    if (!EMAIL_REGEX.test(email)) {
-      return { error: "Invalid email format." };
-    }
-
-    // Requirement: username and email must not already exist
-    const existingUser = await this.users.findOne({ $or: [{ username }, { email }] });
-    if (existingUser) {
-      return { error: "Username or email already exists." };
-    }
-
-    // Effect: Creates a new user record with a hashed password
-    const hashedPassword = await bcrypt.hash(password);
-    const newUser: UserDoc = {
-      _id: freshID(),
-      username,
-      hashedPassword,
-      email,
-      createdAt: new Date(),
-    };
-    await this.users.insertOne(newUser);
-
-    // Effect: returns a new pair of session tokens
-    const tokens = await this.createTokenPair(newUser._id);
-
-    return { user: newUser._id, ...tokens };
-  }
-
-  /**
-   * login (username: String, password: String): (accessToken: String, refreshToken: String)
-   *
-   * **requires**: The provided username and password must match an existing user account.
-   * **effects**: Creates a new session and returns a new pair of access and refresh tokens for the authenticated user.
-   */
-  async login({ username, password }: { username: string; password: string }): Promise<{ accessToken: string; refreshToken: string } | { error: string }> {
-    // Requirement: username must match an existing user
-    const user = await this.users.findOne({ username });
-    if (!user) {
-      return { error: "Invalid username or password." };
-    }
-
-    // Requirement: password must match
-    const passwordMatch = await bcrypt.compare(password, user.hashedPassword);
-    if (!passwordMatch) {
-      return { error: "Invalid username or password." };
-    }
-
-    // Effect: Creates a new session and returns a new pair of tokens
-    const tokens = await this.createTokenPair(user._id);
-    return tokens;
-  }
-
-  /**
-   * logout (refreshToken: String)
-   *
-   * **requires**: A valid refresh token must be provided.
-   * **effects**: Invalidates the user's current refresh token, ending their session.
-   */
-  async logout({ refreshToken }: { refreshToken: string }): Promise<Empty | { error: string }> {
-    // Requirement: A valid refresh token must be provided.
-    // Effect: Invalidates the token by deleting the session.
-    const result = await this.sessions.deleteOne({ refreshToken });
-
-    if (result.deletedCount === 0) {
-      return { error: "Invalid or expired refresh token." };
-    }
-
-    return {};
-  }
-
-  /**
-   * changePassword (accessToken: String, oldPassword: String, newPassword: String)
-   *
-   * **requires**: A valid access token must be provided. The old password must match the user's current password.
-   * **effects**: Updates the user's stored password hash to the new password.
-   */
-  async changePassword(
-    { accessToken, oldPassword, newPassword }: { accessToken: string; oldPassword: string; newPassword: string },
-  ): Promise<Empty | { error: string }> {
-    // Requirement: A valid access token must be provided.
-    const userId = await this.getUserIdFromAccessToken(accessToken);
-    if (!userId) {
-      return { error: "Invalid or expired access token." };
-    }
-
-    const user = await this.users.findOne({ _id: userId });
-    if (!user) {
-      return { error: "User not found." };
-    }
-
-    // Requirement: The old password must match the user's current password.
-    const passwordMatch = await bcrypt.compare(oldPassword, user.hashedPassword);
-    if (!passwordMatch) {
-      return { error: "Incorrect old password." };
-    }
-
-    // Effect: Updates the user's stored password hash to the new password.
-    const newHashedPassword = await bcrypt.hash(newPassword);
-    await this.users.updateOne({ _id: userId }, { $set: { hashedPassword: newHashedPassword } });
-
-    return {};
-  }
-
-  /**
-   * deleteAccount (accessToken: String, password: String)
-   *
-   * **requires**: A valid access token must be provided. The provided password matches the user's current password.
-   * **effects**: Permanently removes the user's account and all associated sessions.
-   */
-  async deleteAccount({ accessToken, password }: { accessToken: string; password: string }): Promise<Empty | { error: string }> {
-    // Requirement: A valid access token must be provided.
-    const userId = await this.getUserIdFromAccessToken(accessToken);
-    if (!userId) {
-      return { error: "Invalid or expired access token." };
-    }
-
-    const user = await this.users.findOne({ _id: userId });
-    if (!user) {
-      return { error: "User not found." };
-    }
-
-    // Requirement: The provided password matches the user's current password.
-    const passwordMatch = await bcrypt.compare(password, user.hashedPassword);
-    if (!passwordMatch) {
-      return { error: "Incorrect password." };
-    }
-
-    // Effect: Permanently removes the user's account and all associated sessions.
-    await this.users.deleteOne({ _id: userId });
-    await this.sessions.deleteMany({ user: userId });
-
-    return {};
   }
 }

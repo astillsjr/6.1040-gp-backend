@@ -19,10 +19,13 @@
 **actions**:
   * `register (username: String, password: String, email: String): (user: User, accessToken: String, refreshToken: String)`
     * **requires**: The provided email and username must not already exist. The email must be in valid format.
-    * **effects**: Creates a new user record with a hashed password and returns a new pair of session tokens.
+    * **effects**: Creates a new user record with a hashed password (email is normalized to lowercase) and returns a new pair of session tokens.
   * `login (username: String, password: String): (accessToken: String, refreshToken: String)`
     * **requires**: The provided username and password must match an existing user account.
     * **effects**: Creates a new session and returns a new pair of access and refresh tokens for the authenticated user.
+  * `refreshAccessToken (refreshToken: String): (accessToken: String)`
+    * **requires**: A valid and non-expired refresh token must be provided.
+    * **effects**: Generates and returns a new short-lived access token. Expired refresh tokens are automatically cleaned up.
   * `logout (refreshToken: String)`
     * **requires**: A valid refresh token must be provided.
     * **effects**: Invalidates the user's current refresh token, ending their session.
@@ -36,4 +39,7 @@
 **notes**:
   * Sessions are stored separately from users to support multiple concurrent sessions per user and proper token management.
   * Access tokens are not stored in state as they are stateless JWTs validated by signature. Only refresh tokens are stored for revocation purposes.
+  * Access tokens are short-lived (15 minutes) and can be refreshed using the `refreshAccessToken` action without requiring re-authentication.
+  * Refresh tokens are long-lived (7 days) and stored in the database, allowing for immediate revocation.
+  * Email addresses are normalized (trimmed and lowercased) during registration to prevent duplicate accounts with different casing.
   * Email is required for account recovery and notifications, though the notification delivery itself is handled by the Notifications concept.
