@@ -7,7 +7,7 @@ import { Empty, ID } from "@utils/types.ts";
 // Collection prefix for this concept
 const PREFIX = "UserAuthentication" + ".";
 
-// Generic ID types for this concept
+// Define the types for our entries based on the concept state
 type User = ID;
 type Session = ID;
 

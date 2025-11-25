@@ -1,0 +1,152 @@
+import { Collection, Db } from "npm:mongodb";
+import { freshID } from "@utils/database.ts";
+import { Empty, ID } from "@utils/types.ts";
+
+// Collection prefix to ensure namespace separation
+const PREFIX = "ItemRequesting" + ".";
+
+// Generic types for the concept's external dependencies
+type User = ID;
+type Item = ID;
+
+// Define the types for our entries based on the concept state
+type ItemRequest = ID;
+export type ItemRequestType = "BORROW" | "TRANSFER" | "ITEM";
+export type ItemRequestStatus = "PENDING" | "ACCEPTED" | "REJECTED" | "CANCELLED";
+
+/**
+ * a set of ItemRequests with
+ *   a requester User
+ *   an item Item
+ *   a type of BORROW or TRANSFER or ITEM
+ *   a status of PENDING or ACCEPTED or REJECTED or CANCELLED
+ *   a requesterNotes String
+ *   an optional requestedStartTime DateTime
+ *   an optional requestedEndTime DateTime
+ *   a createdAt Date
+ */
+interface ItemRequestDoc {
+  _id: ItemRequest;
+  requester: User;
+  item: Item;
+  type: ItemRequestType;
+  status: ItemRequestStatus;
+  requesterNotes: string;
+  requestedStartTime: Date | null;
+  requestedEndTime: Date | null;
+  createdAt: Date;
+}
+
+/**
+ * @concept ItemRequesting
+ * @purpose To allow users to request items from other users or to transfer items to other users.
+ */
+export default class ItemRequestingConcept {
+  requests: Collection<ItemRequestDoc>;
+
+  constructor(private readonly db: Db) {
+    this.requests = this.db.collection(PREFIX + "requests");
+  }
+
+  /**
+   * Create a new item request.
+   * @requires For
+   * @effects Creates a new item request.
+   */
+  async createRequest(
+    params: { 
+      requester: User; 
+      item: Item; 
+      type: ItemRequestType; 
+      status: ItemRequestStatus; 
+      requesterNotes: string; 
+      requestedStartTime: Date | null; 
+      requestedEndTime: Date | null; 
+    }
+  ): Promise<{ request: ItemRequest } | { error: string }> {
+    const { requester, item, type, status, requesterNotes, requestedStartTime, requestedEndTime } = params;
+
+    const request = {
+      _id: freshID(),
+      requester, 
+      item, 
+      type, 
+      status, 
+      requesterNotes, 
+      requestedStartTime, 
+      requestedEndTime, 
+      createdAt: new Date(),
+    };
+    await this.requests.insertOne(request);
+
+    return { request: request._id };
+  }
+
+  /**
+   * Accept a pending item request.
+   * @requires The request must be pending.
+   * @effects Sets the request status to ACCEPTED.
+   */
+  async acceptRequest(
+    { request }: { request: ItemRequest }
+  ): Promise<Empty | { error: string }> {
+    const requestDoc = await this.requests.findOne({ _id: request });
+    if (!requestDoc) {
+      return { error: "Request not found" };
+    }
+
+    if (requestDoc.status !== "PENDING") {
+      return { error: "Request must be pending" };
+    }
+
+    await this.requests.updateOne({ _id: request }, { $set: { status: "ACCEPTED" } });
+    return {};
+  }
+
+  /**
+   * Reject a pending item request.
+   * @requires The request must be pending.
+   * @effects Sets the request status to REJECTED.
+   */
+  async rejectRequest(
+    { request }: { request: ItemRequest }
+  ): Promise<Empty | { error: string }> {
+    const requestDoc = await this.requests.findOne({ _id: request });
+    if (!requestDoc) {
+      return { error: "Request not found" };
+    }
+
+    if (requestDoc.status !== "PENDING") {
+      return { error: "Request must be pending" };
+    }
+
+    await this.requests.updateOne({ _id: request }, { $set: { status: "REJECTED" } });
+    return {};
+  }
+
+  /**
+   * Cancel a pending item request.
+   * @requires The request must be pending.
+   *           The user must be the requester.
+   * @effects Sets the request status to CANCELLED.
+   */
+  async cancelRequest(
+    { request, user }: { request: ItemRequest; user: User }
+  ): Promise<Empty | { error: string }> {
+    const requestDoc = await this.requests.findOne({ _id: request });
+    if (!requestDoc) {
+      return { error: "Request not found" };
+    }
+
+    if (requestDoc.status !== "PENDING") {
+      return { error: "Request must be pending" };
+    }
+
+    if (requestDoc.requester !== user) {
+      return { error: "User must be the requester" };
+    }
+
+    await this.requests.updateOne({ _id: request }, { $set: { status: "CANCELLED" } });
+    return {};
+  }
+}
