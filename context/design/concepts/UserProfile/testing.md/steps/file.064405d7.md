@@ -1,0 +1,170 @@
+---
+timestamp: 'Tue Nov 25 2025 00:52:04 GMT-0500 (Eastern Standard Time)'
+parent: '[[..\20251125_005204.6515db51.md]]'
+content_id: 064405d71f499b6308f96976e233c03d677117953b058287cc9c9a997cc6d263
+---
+
+# file: src\concepts\UserProfile\UserProfileConcept.ts
+
+```typescript
+import { Collection, Db } from "npm:mongodb";
+import { Empty, ID } from "@utils/types.ts";
+
+// Collection prefix to namespace collections for this concept
+const PREFIX = "UserProfile.";
+
+// Generic type parameter for the concept
+type User = ID;
+
+// A list of valid dorms for validation, as required by the concept spec.
+const VALID_DORMS = [
+  "Baker House",
+  "Burton-Conner",
+  "East Campus",
+  "MacGregor House",
+  "Maseeh Hall",
+  "McCormick Hall",
+  "New House",
+  "Next House",
+  "Random Hall",
+  "Simmons Hall",
+  "West Garage",
+];
+
+/**
+ * Represents the state of a user's profile.
+ * a set of Users with
+ *   a displayName String
+ *   a dorm String
+ *   a bio String
+ *   a createdAt Date
+ *   a lenderScore number
+ *   a borrowerScore number
+ */
+interface UserProfile {
+  _id: User;
+  displayName: string;
+  dorm: string;
+  bio: string;
+  createdAt: Date;
+  lenderScore: number;
+  borrowerScore: number;
+}
+
+/**
+ * UserProfile Concept
+ * To maintain user profile information including display name, dorm affiliation,
+ * and other public-facing details that enable community connection and item discovery.
+ */
+export default class UserProfileConcept {
+  private readonly users: Collection<UserProfile>;
+
+  constructor(private readonly db: Db) {
+    this.users = this.db.collection<UserProfile>(PREFIX + "users");
+  }
+
+  /**
+   * createProfile (user: User, displayName: String, dorm: String): (profile: User) | (error: string)
+   *
+   * **requires**: The user must not already have a profile. The dorm must be a valid MIT dorm name.
+   * **effects**: Creates a profile for the user with the provided display name and dorm,
+   * initializing scores to 0, bio to empty, and createdAt to the current time.
+   * Returns the user ID on success.
+   */
+  async createProfile({ user, displayName, dorm }: { user: User; displayName: string; dorm: string }): Promise<{ profile: User } | { error: string }> {
+    if (!VALID_DORMS.includes(dorm)) {
+      return { error: `Invalid dorm name: ${dorm}.` };
+    }
+
+    const existingProfile = await this.users.findOne({ _id: user });
+    if (existingProfile) {
+      return { error: "User already has a profile." };
+    }
+
+    const profile: UserProfile = {
+      _id: user,
+      displayName,
+      dorm,
+      bio: "", // Initialize bio as empty
+      createdAt: new Date(),
+      lenderScore: 0,
+      borrowerScore: 0,
+    };
+
+    await this.users.insertOne(profile);
+    return { profile: user };
+  }
+
+  /**
+   * updateProfile (user: User, displayName: String, dorm: String, bio: String): Empty | (error: string)
+   *
+   * **requires**: The user must have an existing profile.
+   * **effects**: Updates the user's profile information with the provided values.
+   */
+  async updateProfile({ user, displayName, dorm, bio }: { user: User; displayName: string; dorm: string; bio: string }): Promise<Empty | { error: string }> {
+    if (!VALID_DORMS.includes(dorm)) {
+      return { error: `Invalid dorm name: ${dorm}.` };
+    }
+    const result = await this.users.updateOne(
+      { _id: user },
+      { $set: { displayName, dorm, bio } },
+    );
+
+    if (result.matchedCount === 0) {
+      return { error: "User profile not found." };
+    }
+
+    return {};
+  }
+
+  /**
+   * updateScores (user: User, lenderScore: Number, borrowerScore: Number): Empty | (error: string)
+   * **system**
+   *
+   * **requires**: The user must have a profile.
+   * **effects**: Updates the stored reputation scores for the user.
+   */
+  async updateScores({ user, lenderScore, borrowerScore }: { user: User; lenderScore: number; borrowerScore: number }): Promise<Empty | { error: string }> {
+    const result = await this.users.updateOne(
+      { _id: user },
+      { $set: { lenderScore, borrowerScore } },
+    );
+
+    if (result.matchedCount === 0) {
+      return { error: "User profile not found." };
+    }
+
+    return {};
+  }
+
+  //- QUERIES -----------------------------------------------------------------
+
+  /**
+   * _getProfile (user: User): (profile: UserProfile)
+   *
+   * **requires**: user is a valid User ID.
+   * **effects**: Returns the user's full profile information.
+   * If the user has no profile, an empty array is returned.
+   */
+  async _getProfile({ user }: { user: User }): Promise<Array<{ profile: UserProfile }>> {
+    const profile = await this.users.findOne({ _id: user });
+    return profile ? [{ profile }] : [];
+  }
+
+  /**
+   * _getUsersByDorm (dorm: String): (users: { user: User; displayName: String }[])
+   *
+   * **requires**: `dorm` is a valid dorm name.
+   * **effects**: Returns a list of all users and their display names associated with the given dorm.
+   */
+  async _getUsersByDorm({ dorm }: { dorm: string }): Promise<Array<{ user: User; displayName: string }>> {
+    if (!VALID_DORMS.includes(dorm)) {
+      return []; // Return empty if dorm is invalid
+    }
+
+    const cursor = this.users.find({ dorm }, { projection: { _id: 1, displayName: 1 } });
+    const results = await cursor.toArray();
+    return results.map((doc) => ({ user: doc._id, displayName: doc.displayName }));
+  }
+}
+```
