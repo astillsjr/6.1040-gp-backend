@@ -1,5 +1,9 @@
 import { Collection, Db } from "npm:mongodb";
-import { create, getNumericDate, verify } from "https://deno.land/x/djwt@v3.0.1/mod.ts";
+import {
+  create,
+  getNumericDate,
+  verify,
+} from "https://deno.land/x/djwt@v3.0.1/mod.ts";
 import * as bcrypt from "https://deno.land/x/bcrypt@v0.4.1/mod.ts";
 import { freshID } from "@utils/database.ts";
 import { Empty, ID } from "@utils/types.ts";
@@ -81,26 +85,36 @@ export default class UserAuthenticationConcept {
     this.users.createIndex({ username: 1 }, { unique: true }).catch((err) => {
       console.error("Error creating username index:", err);
     });
-    
+
     this.users.createIndex({ email: 1 }, { unique: true }).catch((err) => {
       console.error("Error creating email index:", err);
     });
 
-    this.sessions.createIndex({ refreshToken: 1 }, { unique: true }).catch((err) => {
-      console.error("Error creating refresh token index:", err);
-    });
+    this.sessions.createIndex({ refreshToken: 1 }, { unique: true }).catch(
+      (err) => {
+        console.error("Error creating refresh token index:", err);
+      },
+    );
   }
 
   /**
    * Register a new user.
-   * @requires The provided email and username must not already exist. 
+   * @requires The provided email and username must not already exist.
    *           The email must be in valid format.
    *           The password must be at least 8 characters long (potentially implement later).
    * @effects Creates a new user record with a hashed password and returns a new pair of session tokens.
    */
   async register(
-    { username, password, email }: { username: string; password: string; email: string },
-  ): Promise<{ user: User; accessToken: string; refreshToken: string } | { error: string }> {
+    { username, password, email }: {
+      username: string;
+      password: string;
+      email: string;
+    },
+  ): Promise<
+    { user: User; accessToken: string; refreshToken: string } | {
+      error: string;
+    }
+  > {
     // Normalize email: trim whitespace and convert to lowercase
     const normalizedEmail = email.trim().toLowerCase();
 
@@ -110,7 +124,9 @@ export default class UserAuthenticationConcept {
     }
 
     // Requirement: username and email must not already exist
-    const existingUser = await this.users.findOne({ $or: [{ username }, { email: normalizedEmail }] });
+    const existingUser = await this.users.findOne({
+      $or: [{ username }, { email: normalizedEmail }],
+    });
     if (existingUser) {
       return { error: "Username or email already exists." };
     }
@@ -139,8 +155,10 @@ export default class UserAuthenticationConcept {
    * @effects Creates a new session and returns a new pair of access and refresh tokens for the authenticated user.
    */
   async login(
-    { username, password }: { username: string; password: string }
-  ): Promise<{ accessToken: string; refreshToken: string } | { error: string }> {
+    { username, password }: { username: string; password: string },
+  ): Promise<
+    { accessToken: string; refreshToken: string } | { error: string }
+  > {
     // Requirement: username must match an existing user
     const user = await this.users.findOne({ username });
     if (!user) {
@@ -164,7 +182,7 @@ export default class UserAuthenticationConcept {
    * @effects Generates and returns a new short-lived access token.
    */
   async refreshAccessToken(
-    { refreshToken }: { refreshToken: string }
+    { refreshToken }: { refreshToken: string },
   ): Promise<{ accessToken: string } | { error: string }> {
     // Requirement: A valid and non-expired refresh token must be provided.
     const session = await this.sessions.findOne({ refreshToken });
@@ -187,7 +205,9 @@ export default class UserAuthenticationConcept {
       {
         sub: session.user,
         iat: getNumericDate(now),
-        exp: getNumericDate(new Date(now.getTime() + ACCESS_TOKEN_EXPIRATION_MINUTES * 60 * 1000)),
+        exp: getNumericDate(
+          new Date(now.getTime() + ACCESS_TOKEN_EXPIRATION_MINUTES * 60 * 1000),
+        ),
       },
       key,
     );
@@ -196,12 +216,12 @@ export default class UserAuthenticationConcept {
   }
 
   /**
-   * Logs out a user. 
+   * Logs out a user.
    * @requires A valid refresh token must be provided.
    * @effects Invalidates the user's current refresh token, ending their session.
    */
   async logout(
-    { refreshToken }: { refreshToken: string }
+    { refreshToken }: { refreshToken: string },
   ): Promise<Empty | { error: string }> {
     // Requirement: A valid refresh token must be provided.
     // Effect: Invalidates the token by deleting the session.
@@ -216,12 +236,16 @@ export default class UserAuthenticationConcept {
 
   /**
    * Change a user's password.
-   * @requires A valid access token must be provided. 
+   * @requires A valid access token must be provided.
    *           The old password must match the user's current password.
    * @effects Updates the user's stored password hash to the new password.
    */
   async changePassword(
-    { accessToken, oldPassword, newPassword }: { accessToken: string; oldPassword: string; newPassword: string },
+    { accessToken, oldPassword, newPassword }: {
+      accessToken: string;
+      oldPassword: string;
+      newPassword: string;
+    },
   ): Promise<Empty | { error: string }> {
     // Requirement: A valid access token must be provided.
     const userId = await this.getUserIdFromAccessToken(accessToken);
@@ -235,7 +259,10 @@ export default class UserAuthenticationConcept {
     }
 
     // Requirement: The old password must match the user's current password.
-    const passwordMatch = await bcrypt.compare(oldPassword, user.hashedPassword);
+    const passwordMatch = await bcrypt.compare(
+      oldPassword,
+      user.hashedPassword,
+    );
     if (!passwordMatch) {
       return { error: "Incorrect old password." };
     }
@@ -243,19 +270,21 @@ export default class UserAuthenticationConcept {
     // Effect: Updates the user's stored password hash to the new password.
     const salt = await bcrypt.genSalt(10);
     const newHashedPassword = await bcrypt.hash(newPassword, salt);
-    await this.users.updateOne({ _id: userId }, { $set: { hashedPassword: newHashedPassword } });
+    await this.users.updateOne({ _id: userId }, {
+      $set: { hashedPassword: newHashedPassword },
+    });
 
     return {};
   }
 
   /**
    * Delete an existing user account.
-   * @requires A valid access token must be provided. 
+   * @requires A valid access token must be provided.
    *           The provided password matches the user's current password.
    * @effects Permanently removes the user's account and all associated sessions.
    */
   async deleteAccount(
-    { accessToken, password }: { accessToken: string; password: string }
+    { accessToken, password }: { accessToken: string; password: string },
   ): Promise<Empty | { error: string }> {
     // Requirement: A valid access token must be provided.
     const userId = await this.getUserIdFromAccessToken(accessToken);
@@ -284,7 +313,9 @@ export default class UserAuthenticationConcept {
   /**
    * Generates a pair of access and refresh tokens for a given user.
    */
-  private async createTokenPair(userId: User): Promise<{ accessToken: string; refreshToken: string }> {
+  private async createTokenPair(
+    userId: User,
+  ): Promise<{ accessToken: string; refreshToken: string }> {
     const key = await getKey();
     const now = new Date();
     const accessToken = await create(
@@ -292,13 +323,17 @@ export default class UserAuthenticationConcept {
       {
         sub: userId,
         iat: getNumericDate(now),
-        exp: getNumericDate(new Date(now.getTime() + ACCESS_TOKEN_EXPIRATION_MINUTES * 60 * 1000)),
+        exp: getNumericDate(
+          new Date(now.getTime() + ACCESS_TOKEN_EXPIRATION_MINUTES * 60 * 1000),
+        ),
       },
       key,
     );
 
     const refreshToken = crypto.randomUUID();
-    const expiresAt = new Date(now.getTime() + REFRESH_TOKEN_EXPIRATION_DAYS * 24 * 60 * 60 * 1000);
+    const expiresAt = new Date(
+      now.getTime() + REFRESH_TOKEN_EXPIRATION_DAYS * 24 * 60 * 60 * 1000,
+    );
 
     await this.sessions.insertOne({
       _id: freshID(),
@@ -314,7 +349,9 @@ export default class UserAuthenticationConcept {
   /**
    * Decodes a JWT access token and returns the user ID.
    */
-  private async getUserIdFromAccessToken(accessToken: string): Promise<User | null> {
+  private async getUserIdFromAccessToken(
+    accessToken: string,
+  ): Promise<User | null> {
     try {
       const key = await getKey();
       const payload = await verify(accessToken, key);
