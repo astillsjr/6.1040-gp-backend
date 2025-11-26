@@ -195,7 +195,10 @@ export function startRequestingServer(
   app.use(
     "/*",
     cors({
-      origin: REQUESTING_ALLOWED_DOMAIN,
+      origin: REQUESTING_ALLOWED_DOMAIN === "*" ? "*" : REQUESTING_ALLOWED_DOMAIN,
+      allowMethods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
+      allowHeaders: ["Content-Type", "Authorization"],
+      credentials: true,
     }),
   );
 
@@ -301,5 +304,7 @@ export function startRequestingServer(
     `\n🚀 Requesting server listening for POST requests at base path of ${routePath}`,
   );
 
-  Deno.serve({ port: PORT }, app.fetch);
+  // Bind to 0.0.0.0 to accept connections from external hosts (required for production)
+  Deno.serve({ port: PORT, hostname: "0.0.0.0" }, app.fetch);
+  console.log(`Server listening on http://0.0.0.0:${PORT}`);
 }

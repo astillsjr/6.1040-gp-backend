@@ -9,10 +9,11 @@ The Requesting concept offers a traditional entrypoint to an application built w
 
 # Configuration
 The following environment variables are available:
-- `PORT`: the port to the server binds, default 10000
+- `PORT`: the port to the server binds, default 8000
 - `REQUESTING_BASE_URL`: the base URL prefix for api requests, default "/api"
 - `REQUESTING_TIMEOUT`: the timeout for requests, default 10000ms
 - `REQUESTING_SAVE_RESPONSES`: whether to persist responses or not, default true
+- `REQUESTING_ALLOWED_DOMAIN`: the allowed origin for CORS requests, default "*" (allows all origins). For production, set this to your frontend URL (e.g., "https://your-frontend-domain.com")
 
 # Passthrough Routes
 
