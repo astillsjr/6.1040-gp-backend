@@ -1,3 +1,12 @@
+---
+timestamp: 'Tue Nov 25 2025 23:29:18 GMT-0500 (Eastern Standard Time)'
+parent: '[[..\20251125_232918.a4b16071.md]]'
+content_id: 08ed51e1113df19c6caa39ee298a372785780700d1855c6c437b5c5a4a36f3ae
+---
+
+# file: src/concepts/ItemRequesting/ItemRequestingConcept.test.ts
+
+```typescript
 import { assertEquals } from "jsr:@std/assert";
 import { testDb } from "@utils/database.ts";
 import { ID } from "@utils/types.ts";
@@ -24,7 +33,7 @@ Deno.test("ItemRequestingConcept", async (t) => {
       requester: userB,
       item: item1,
       type: "BORROW",
-      status: "PENDING", 
+      status: "PENDING", // Per spec, status should default to PENDING. We set it explicitly here to match implementation.
       requesterNotes: "I would like to borrow this item.",
       requestedStartTime: startTime,
       requestedEndTime: endTime,
@@ -164,6 +173,8 @@ Deno.test("ItemRequestingConcept", async (t) => {
   await client.close();
 });
 
+# trace:
+
 Deno.test("ItemRequestingConcept Principle Trace", async () => {
   console.log("\n--- Principle Trace Start ---");
   const [db, client] = await testDb();
@@ -207,3 +218,5 @@ Deno.test("ItemRequestingConcept Principle Trace", async () => {
   console.log("--- Principle Trace End ---\n");
   await client.close();
 });
+
+```

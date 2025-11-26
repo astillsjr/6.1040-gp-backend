@@ -22,7 +22,10 @@ const REQUESTING_TIMEOUT = parseInt(
   10,
 );
 
-// TODO: make sure you configure this environment variable for proper CORS configuration
+// CORS configuration: Set REQUESTING_ALLOWED_DOMAIN to your frontend URL in production
+// For production: Set to "https://localloop-frontend.onrender.com" (or your frontend URL)
+// For development: Can use "*" (but credentials will be disabled)
+// When set to a specific domain, credentials: true is enabled for secure cookie/auth handling
 const REQUESTING_ALLOWED_DOMAIN = Deno.env.get("REQUESTING_ALLOWED_DOMAIN") ??
   "*";
 
