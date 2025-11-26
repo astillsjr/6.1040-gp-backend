@@ -22,7 +22,10 @@ const REQUESTING_TIMEOUT = parseInt(
   10,
 );
 
-// TODO: make sure you configure this environment variable for proper CORS configuration
+// CORS configuration: Set REQUESTING_ALLOWED_DOMAIN to your frontend URL in production
+// For production: Set to "https://localloop-frontend.onrender.com" (or your frontend URL)
+// For development: Can use "*" (but credentials will be disabled)
+// When set to a specific domain, credentials: true is enabled for secure cookie/auth handling
 const REQUESTING_ALLOWED_DOMAIN = Deno.env.get("REQUESTING_ALLOWED_DOMAIN") ??
   "*";
 
@@ -192,15 +195,24 @@ export function startRequestingServer(
     throw new Error("Requesting concept missing or broken.");
   }
   const app = new Hono();
-  app.use(
-    "/*",
-    cors({
-      origin: REQUESTING_ALLOWED_DOMAIN === "*" ? "*" : REQUESTING_ALLOWED_DOMAIN,
+
+  // CORS configuration: when credentials: true, cannot use origin: "*"
+  // Use a function to handle multiple origins or specific origin
+  const corsConfig = REQUESTING_ALLOWED_DOMAIN === "*"
+    ? {
+      origin: "*",
+      allowMethods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
+      allowHeaders: ["Content-Type", "Authorization"],
+      credentials: false, // Must be false when using origin: "*"
+    }
+    : {
+      origin: REQUESTING_ALLOWED_DOMAIN,
       allowMethods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
       allowHeaders: ["Content-Type", "Authorization"],
       credentials: true,
-    }),
-  );
+    };
+
+  app.use("/*", cors(corsConfig));
 
   /**
    * PASSTHROUGH ROUTES
