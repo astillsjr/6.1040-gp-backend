@@ -1,3 +1,12 @@
+---
+timestamp: 'Tue Nov 25 2025 19:37:42 GMT-0500 (Eastern Standard Time)'
+parent: '[[..\20251125_193742.ca411062.md]]'
+content_id: 50afd3af68313ec4f40e310128fb0f95f77ba5c807797346e586501d3157b27b
+---
+
+# file: src\concepts\ItemRequesting\ItemRequestingConcept.ts
+
+```typescript
 import { Collection, Db } from "npm:mongodb";
 import { freshID } from "@utils/database.ts";
 import { Empty, ID } from "@utils/types.ts";
@@ -25,7 +34,7 @@ export type ItemRequestStatus = "PENDING" | "ACCEPTED" | "REJECTED" | "CANCELLED
  *   an optional requestedEndTime DateTime
  *   a createdAt Date
  */
-interface ItemRequestDoc {
+export interface ItemRequestDoc { // Exported for use in syncs
   _id: ItemRequest;
   requester: User;
   item: Item;
@@ -48,6 +57,8 @@ export default class ItemRequestingConcept {
     this.requests = this.db.collection(PREFIX + "requests");
   }
 
+  // ... (all existing actions: createRequest, acceptRequest, etc. remain here) ...
+  
   /**
    * Create a new item request.
    * @requires For
@@ -149,6 +160,9 @@ export default class ItemRequestingConcept {
     await this.requests.updateOne({ _id: request }, { $set: { status: "CANCELLED" } });
     return {};
   }
+  
+  //- QUERIES -------------------------------------------------------------------
+  // NEW QUERIES START
 
   /**
    * _getRequest(request: ItemRequest): (requestDoc: ItemRequestDoc)
@@ -181,4 +195,11 @@ export default class ItemRequestingConcept {
     const results = await cursor.toArray();
     return results.map(doc => ({ otherRequest: doc._id }));
   }
+
+  // NEW QUERIES END
 }
+```
+
+#### 3. ItemTransactionConcept.ts (1 New Query)
+
+We need a query to get the details of a transaction, which is used to update the listing status correctly upon completion or cancellation.

@@ -1,3 +1,12 @@
+---
+timestamp: 'Tue Nov 25 2025 19:49:14 GMT-0500 (Eastern Standard Time)'
+parent: '[[..\20251125_194914.a84b6a44.md]]'
+content_id: ee186b928af275a50d7d492fb5d70543fa910f01fbd99cc350b5b91d539ec830
+---
+
+# file: src\concepts\UserAuthentication\UserAuthenticationConcept.ts
+
+```typescript
 import { Collection, Db } from "npm:mongodb";
 import {
   create,
@@ -371,3 +380,5 @@ export default class UserAuthenticationConcept {
       return userId ? [{ user: userId }] : [];
     }
 }
+
+```

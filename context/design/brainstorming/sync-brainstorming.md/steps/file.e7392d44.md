@@ -1,0 +1,181 @@
+---
+timestamp: 'Tue Nov 25 2025 19:25:42 GMT-0500 (Eastern Standard Time)'
+parent: '[[..\20251125_192542.e5baf9ac.md]]'
+content_id: e7392d44b96a723ee88ae352311556ede8884ca5948bc8ba30db3bf0d5bc31f4
+---
+
+# file: src\concepts\Item\ItemConcept.ts
+
+```typescript
+import { Collection, Db } from "npm:mongodb";
+import { ID, Empty } from "@utils/types.ts";
+import { freshID } from "@utils/database.ts";
+
+// Collection prefix, using the concept name
+const PREFIX = "Item" + ".";
+
+// Generic types used by this concept
+type User = ID;
+type Item = ID;
+
+/**
+ * Represents the state of the Item concept.
+ *
+ * a set of Items with
+ *   an optional owner User
+ *   a title String
+ *   a description String
+ *   a category String
+ *   a condition String
+ *   a createdAt Date
+ */
+interface ItemState {
+  _id: Item;
+  owner?: User;
+  title: string;
+  description: string;
+  category: string;
+  condition: string;
+  createdAt: Date;
+}
+
+/**
+ * @concept Item
+ * @purpose To represent a unique, real-world object or material within the system, serving as the central entity for listings, requests, and transactions.
+ */
+export default class ItemConcept {
+  public readonly items: Collection<ItemState>;
+
+  constructor(private readonly db: Db) {
+    this.items = this.db.collection(PREFIX + "items");
+  }
+
+  /**
+   * createItem (owner: User, title: String, description: String, category: String, condition: String): (item: Item)
+   *
+   * @requires The owner user must exist (validated by synchronization, not within this concept).
+   * @effects Creates a new item record associated with an owner.
+   */
+  async createItem({ owner, title, description, category, condition }: { owner: User; title: string; description: string; category: string; condition: string }): Promise<{ item: Item }> {
+    const newItem: ItemState = {
+      _id: freshID(),
+      owner,
+      title,
+      description,
+      category,
+      condition,
+      createdAt: new Date(),
+    };
+
+    await this.items.insertOne(newItem);
+
+    return { item: newItem._id };
+  }
+
+  /**
+   * createOwnerlessItem (title: String, description: String, category: String): (item: Item)
+   *
+   * @requires true
+   * @effects Creates a new item record without an owner, to be used for sourcing requests.
+   */
+  async createOwnerlessItem({ title, description, category }: { title: string; description: string; category: string }): Promise<{ item: Item }> {
+    const newItem: ItemState = {
+      _id: freshID(),
+      title,
+      description,
+      category,
+      condition: "N/A", // Condition is not applicable for ownerless items
+      createdAt: new Date(),
+    };
+
+    await this.items.insertOne(newItem);
+
+    return { item: newItem._id };
+  }
+
+  /**
+   * updateItemDetails (item: Item, title: String, description: String, category: String, condition: String)
+   *
+   * @requires The item must exist.
+   * @effects Updates the core details of the item.
+   */
+  async updateItemDetails({ item, title, description, category, condition }: { item: Item; title: string; description: string; category: string; condition: string }): Promise<Empty | { error: string }> {
+    const result = await this.items.updateOne(
+      { _id: item },
+      {
+        $set: {
+          title,
+          description,
+          category,
+          condition,
+        },
+      },
+    );
+
+    if (result.matchedCount === 0) {
+      return { error: `Item with id ${item} not found.` };
+    }
+
+    return {};
+  }
+
+  /**
+   * deleteItem(item: Item, owner: User)
+   *
+   * @requires The user must be the `owner` of the `item`. The item must not be part of any active or pending transaction (validated by synchronization).
+   * @effects Permanently removes the `item` record from the system.
+   */
+  async deleteItem({ item, owner }: { item: Item; owner: User }): Promise<Empty | { error: string }> {
+    const existingItem = await this.items.findOne({ _id: item });
+
+    if (!existingItem) {
+      return { error: `Item with id ${item} not found.` };
+    }
+
+    if (existingItem.owner !== owner) {
+      return { error: `User ${owner} is not the owner of item ${item}.` };
+    }
+
+    const result = await this.items.deleteOne({ _id: item, owner: owner });
+
+    if (result.deletedCount === 0) {
+      // This case should theoretically not be reached due to the checks above, but it's good practice.
+      return { error: `Failed to delete item ${item}.` };
+    }
+
+    return {};
+  }
+
+  //- QUERIES -----------------------------------------------------------------
+
+  /**
+   * _getItemById(item: Item): (item: ItemState)
+   * @requires Item exists.
+   * @effects Returns the full item document.
+   */
+  async _getItemById({ item }: { item: Item }): Promise<{ item: ItemState }[]> {
+    const foundItem = await this.items.findOne({ _id: item });
+    return foundItem ? [{ item: foundItem }] : [];
+  }
+
+  /**
+   * _getItemsByOwner(owner: User): (items: ItemState[])
+   * @requires True.
+   * @effects Returns all items associated with the given owner.
+   */
+  async _getItemsByOwner({ owner }: { owner: User }): Promise<{ items: ItemState[] }> {
+    const foundItems = await this.items.find({ owner: owner }).toArray();
+    return { items: foundItems };
+  }
+
+  /**
+   * _getAllItems(): (items: ItemState[])
+   * @requires True.
+   * @effects Returns all items in the system.
+   */
+  async _getAllItems(): Promise<{ items: ItemState[] }> {
+    const allItems = await this.items.find().toArray();
+    return { items: allItems };
+  }
+}
+```

@@ -1,3 +1,12 @@
+---
+timestamp: 'Tue Nov 25 2025 19:25:42 GMT-0500 (Eastern Standard Time)'
+parent: '[[..\20251125_192542.e5baf9ac.md]]'
+content_id: 1cce6d8e42c91bcf16124ebbc624a2342350820b33828baddd74ee22051ce61b
+---
+
+# file: src\concepts\ItemTransaction\ItemTransactionConcept.ts
+
+```typescript
 import { Collection, Db } from "npm:mongodb";
 import { freshID } from "@utils/database.ts";
 import { Empty, ID } from "@utils/types.ts";
@@ -183,13 +192,5 @@ export default class ItemTransactionConcept {
     await this.transactions.updateOne({ _id: transaction }, { $set: { status: "CANCELLED" } });
     return {};
   }
-
-  /**
-   * _getTransaction(transaction: ItemTransaction): (transactionDoc: ItemTransactionDoc)
-   * @effects Returns the full document for a given transaction ID.
-   */
-  async _getTransaction({ transaction }: { transaction: ItemTransaction }): Promise<{ transactionDoc: ItemTransactionDoc }[]> {
-    const doc = await this.transactions.findOne({ _id: transaction });
-    return doc ? [{ transactionDoc: doc }] : [];
-  }
 } 
+```

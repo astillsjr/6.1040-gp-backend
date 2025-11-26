@@ -1,3 +1,12 @@
+---
+timestamp: 'Tue Nov 25 2025 19:37:42 GMT-0500 (Eastern Standard Time)'
+parent: '[[..\20251125_193742.ca411062.md]]'
+content_id: 64cc75aea8c7f933a6559f956b2a8889c34a4c65f37c3c4dcfbd3ad522664f50
+---
+
+# file: src\concepts\UserAuthentication\UserAuthenticationConcept.ts
+
+```typescript
 import { Collection, Db } from "npm:mongodb";
 import {
   create,
@@ -97,6 +106,8 @@ export default class UserAuthenticationConcept {
     );
   }
 
+  // ... (all existing actions: register, login, etc. remain here) ...
+  
   /**
    * Register a new user.
    * @requires The provided email and username must not already exist.
@@ -310,6 +321,19 @@ export default class UserAuthenticationConcept {
     return {};
   }
 
+  //- QUERIES -------------------------------------------------------------------
+  // NEW QUERY START
+  /**
+   * _getUserFromToken(accessToken: string): (user: User)
+   * @requires A valid, non-expired accessToken.
+   * @effects Returns the user ID associated with the token.
+   */
+  async _getUserFromToken({ accessToken }: { accessToken: string }): Promise<{ user: User }[]> {
+    const userId = await this.getUserIdFromAccessToken(accessToken);
+    return userId ? [{ user: userId }] : [];
+  }
+  // NEW QUERY END
+
   /**
    * Generates a pair of access and refresh tokens for a given user.
    */
@@ -360,14 +384,9 @@ export default class UserAuthenticationConcept {
       return null;
     }
   }
-
-    /**
-   * _getUserFromToken(accessToken: string): (user: User)
-   * @requires A valid, non-expired accessToken.
-   * @effects Returns the user ID associated with the token.
-   */
-    async _getUserFromToken({ accessToken }: { accessToken: string }): Promise<{ user: User }[]> {
-      const userId = await this.getUserIdFromAccessToken(accessToken);
-      return userId ? [{ user: userId }] : [];
-    }
 }
+```
+
+#### 2. ItemRequestingConcept.ts (3 New Queries)
+
+We need several queries to fetch request details, find the associated item, and find other pending requests for an item to support the transaction logic.

@@ -1,3 +1,12 @@
+---
+timestamp: 'Tue Nov 25 2025 19:37:42 GMT-0500 (Eastern Standard Time)'
+parent: '[[..\20251125_193742.ca411062.md]]'
+content_id: 16c262b10013065756fae0f88eb0fd52bacbdcf368e886df3ffab38f3bc0f101
+---
+
+# file: src\concepts\ItemTransaction\ItemTransactionConcept.ts
+
+```typescript
 import { Collection, Db } from "npm:mongodb";
 import { freshID } from "@utils/database.ts";
 import { Empty, ID } from "@utils/types.ts";
@@ -27,7 +36,7 @@ export type ItemTransactionStatus = "PENDING_PICKUP" | "IN_PROGRESS" | "PENDING_
  *   an optional pickedUpAt Date
  *   an optional returnedAt Date
  */
-interface ItemTransactionDoc {
+export interface ItemTransactionDoc { // Exported for use in syncs
   _id: ItemTransaction;
   from: User;
   to: User;
@@ -52,6 +61,8 @@ export default class ItemTransactionConcept {
     this.transactions = this.db.collection(PREFIX + "transactions");
   }
 
+  // ... (all existing actions: createTransaction, markPickedUp, etc. remain here) ...
+  
   /**
    * Create a new item transaction.
    * @requires 
@@ -183,6 +194,9 @@ export default class ItemTransactionConcept {
     await this.transactions.updateOne({ _id: transaction }, { $set: { status: "CANCELLED" } });
     return {};
   }
+  
+  //- QUERIES -------------------------------------------------------------------
+  // NEW QUERY START
 
   /**
    * _getTransaction(transaction: ItemTransaction): (transactionDoc: ItemTransactionDoc)
@@ -192,4 +206,15 @@ export default class ItemTransactionConcept {
     const doc = await this.transactions.findOne({ _id: transaction });
     return doc ? [{ transactionDoc: doc }] : [];
   }
+
+  // NEW QUERY END
 } 
+```
+
+***
+
+### Part 2: Complete Synchronization Files
+
+Now that all concepts have the required queries, these synchronization files will work correctly.
+
+#### 1. Authentication and Profile Syncs

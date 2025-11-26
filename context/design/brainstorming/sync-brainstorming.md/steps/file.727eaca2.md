@@ -1,3 +1,12 @@
+---
+timestamp: 'Tue Nov 25 2025 19:58:37 GMT-0500 (Eastern Standard Time)'
+parent: '[[..\20251125_195837.708c2521.md]]'
+content_id: 727eaca2bb2c2dc48b5cc5479e141bc418d5d488d7012acbd75acac4e6ddc3cd
+---
+
+# file: src/concepts/Requesting/passthrough.ts
+
+```typescript
 /**
  * The Requesting concept exposes passthrough routes by default,
  * which allow POSTs to the route:
@@ -25,13 +34,6 @@
  */
 
 export const inclusions: Record<string, string> = {
-  // Feel free to delete these example inclusions
-  "/api/LikertSurvey/_getSurveyQuestions": "this is a public query",
-  "/api/LikertSurvey/_getSurveyResponses": "responses are public",
-  "/api/LikertSurvey/_getRespondentAnswers": "answers are visible",
-  "/api/LikertSurvey/submitResponse": "allow anyone to submit response",
-  "/api/LikertSurvey/updateResponse": "allow anyone to update their response",
-
   // UserAuthentication: Public endpoints for registration and login.
   "/api/UserAuthentication/register": "Public endpoint for new user registration.",
   "/api/UserAuthentication/login": "Public endpoint for user login.",
@@ -62,23 +64,19 @@ export const inclusions: Record<string, string> = {
  */
 
 export const exclusions: Array<string> = [
-  // Feel free to delete these example exclusions
-  "/api/LikertSurvey/createSurvey",
-  "/api/LikertSurvey/addQuestion",
-
   // UserAuthentication: Actions requiring a valid session or internal logic.
   "/api/UserAuthentication/logout",
   "/api/UserAuthentication/changePassword",
   "/api/UserAuthentication/deleteAccount",
   "/api/UserAuthentication/createTokenPair", // Internal helper method, should not be an endpoint.
   "/api/UserAuthentication/getUserIdFromAccessToken", // Internal helper method, should not be an endpoint.
-  "/api/UserAuthentication/_getUserFromToken",
+  "/api/UserAuthentication/_getUserFromToken", // CRITICAL: Internal query for authentication, not a public endpoint.
 
   // UserProfile: All mutations and system actions require auth and orchestration.
   "/api/UserProfile/createProfile",
   "/api/UserProfile/updateProfile",
   "/api/UserProfile/updateScores", // System action, triggered by syncs.
-  
+
   // Item: Mutations and private queries require auth.
   "/api/Item/createItem",
   "/api/Item/createOwnerlessItem",
@@ -102,13 +100,16 @@ export const exclusions: Array<string> = [
   "/api/ItemRequesting/acceptRequest",
   "/api/ItemRequesting/rejectRequest",
   "/api/ItemRequesting/cancelRequest",
-  "/api/ItemRequesting/_getRequest", // Exposes private request details.
-  "/api/ItemRequesting/_getItemForRequest", // Internal query for sync logic.
-  "/api/ItemRequesting/_getOtherPendingRequests", // Exposes private data about other users' requests.
-  "/api/ItemTransaction/createTransaction", // System action, triggered by syncs.
   "/api/ItemTransaction/markPickedUp",
   "/api/ItemTransaction/markReturned",
   "/api/ItemTransaction/confirmReturn",
   "/api/ItemTransaction/cancelTransaction",
+  "/api/ItemTransaction/createTransaction", // System action, triggered by syncs.
+
+  // NEWLY ADDED EXCLUSIONS for internal queries
+  "/api/ItemRequesting/_getRequest", // Exposes private request details.
+  "/api/ItemRequesting/_getItemForRequest", // Internal query for sync logic.
+  "/api/ItemRequesting/_getOtherPendingRequests", // Exposes private data about other users' requests.
   "/api/ItemTransaction/_getTransaction", // Exposes private transaction details.
 ];
+```
