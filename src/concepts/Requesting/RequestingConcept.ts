@@ -198,7 +198,6 @@ export function startRequestingServer(
       origin: REQUESTING_ALLOWED_DOMAIN === "*" ? "*" : REQUESTING_ALLOWED_DOMAIN,
       allowMethods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
       allowHeaders: ["Content-Type", "Authorization"],
-      credentials: true,
     }),
   );
 
