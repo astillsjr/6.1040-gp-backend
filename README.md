@@ -6,5 +6,6 @@ For more information, find our assignments here in these folders:
 
 [Functional Design](deliverables/functional-design)
 
+[Checkpoint Alpha](deliverables/checkpoint-alpha)
 
 
