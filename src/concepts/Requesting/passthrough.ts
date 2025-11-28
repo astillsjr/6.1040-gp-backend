@@ -40,6 +40,7 @@ export const inclusions: Record<string, string> = {
   // Item & ItemListing: Public queries for browsing items and their details without being logged in.
   "/api/Item/_getItemById": "Public query to view a single item's details.",
   "/api/Item/_getAllItems": "Public query to browse all items in the system.",
+  "/api/Item/_getItemsByOwner": "Public query to view items owned by a specific user.",
   "/api/ItemListing/_getListings": "Public query to browse all available listings.",
   "/api/ItemListing/_getListingByItem": "Public query to get listing info for an item.",
   "/api/ItemListing/_getPhotosByItem": "Public query to view item photos.",
@@ -49,6 +50,13 @@ export const inclusions: Record<string, string> = {
   // UserProfile: Public queries for viewing profiles and finding community members.
   "/api/UserProfile/_getProfile": "Public query to view a user's public profile.",
   "/api/UserProfile/_getUsersByDorm": "Public query to find users within a specific dorm.",
+
+  // ItemRequesting: Queries for viewing requests (read-only, useful for dashboards).
+  "/api/ItemRequesting/_getRequestsByItem": "Query to get all requests for a specific item (for owners).",
+  "/api/ItemRequesting/_getRequestsByRequester": "Query to get all requests made by a specific user.",
+
+  // ItemTransaction: Queries for viewing transactions (read-only, for tracking borrows/lends).
+  "/api/ItemTransaction/_getTransactionsByUser": "Query to get all transactions involving a specific user.",
 };
 
 /**
@@ -84,7 +92,6 @@ export const exclusions: Array<string> = [
   "/api/Item/createOwnerlessItem",
   "/api/Item/updateItemDetails",
   "/api/Item/deleteItem",
-  "/api/Item/_getItemsByOwner", // Private query, should be handled by an authenticated route.
 
   // ItemListing: All mutations require auth and ownership checks.
   "/api/ItemListing/listItem",

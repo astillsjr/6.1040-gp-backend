@@ -192,4 +192,14 @@ export default class ItemTransactionConcept {
     const doc = await this.transactions.findOne({ _id: transaction });
     return doc ? [{ transactionDoc: doc }] : [];
   }
+
+  /**
+   * _getTransactionsByUser(user: User): (transactionDoc: ItemTransactionDoc)
+   * @effects Returns all transactions where the user is either 'from' or 'to', sorted by creation date.
+   */
+  async _getTransactionsByUser({ user }: { user: User }): Promise<ItemTransactionDoc[]> {
+    return await this.transactions.find({
+      $or: [{ from: user }, { to: user }]
+    }).sort({ createdAt: -1 }).toArray();
+  }
 } 

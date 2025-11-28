@@ -181,4 +181,20 @@ export default class ItemRequestingConcept {
     const results = await cursor.toArray();
     return results.map(doc => ({ otherRequest: doc._id }));
   }
+
+  /**
+   * _getRequestsByItem(item: Item): (requestDoc: ItemRequestDoc)
+   * @effects Returns all requests for a specific item (for owners to see incoming requests).
+   */
+  async _getRequestsByItem({ item }: { item: Item }): Promise<ItemRequestDoc[]> {
+    return await this.requests.find({ item }).sort({ createdAt: -1 }).toArray();
+  }
+
+  /**
+   * _getRequestsByRequester(requester: User): (requestDoc: ItemRequestDoc)
+   * @effects Returns all requests made by a specific user (for users to see their outgoing requests).
+   */
+  async _getRequestsByRequester({ requester }: { requester: User }): Promise<ItemRequestDoc[]> {
+    return await this.requests.find({ requester }).sort({ createdAt: -1 }).toArray();
+  }
 }
