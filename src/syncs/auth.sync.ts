@@ -2,38 +2,71 @@ import { actions, Sync } from "@engine";
 import { Requesting, UserAuthentication, UserProfile } from "@concepts";
 
 /**
- * When a user successfully registers, automatically create a basic profile for them.
- * The `displayName` defaults to their `username`. They can update it later.
+ * Handles an authenticated request to create a user's profile.
+ * Verifies that the user creating the profile is authenticated and can only create their own profile.
  */
-export const CreateProfileOnRegister: Sync = ({ user, username }) => ({
+export const CreateProfileRequest: Sync = (
+  { request, accessToken, user, displayName, dorm },
+) => ({
   when: actions(
-    [UserAuthentication.register, { username }, { user }],
+    [Requesting.request, {
+      path: "/UserProfile/createProfile",
+      accessToken,
+      displayName,
+      dorm,
+    }, { request }],
+  ),
+  where: (frames) =>
+    frames.query(UserAuthentication._getUserFromToken, { accessToken }, {
+      user,
+    }),
+  then: actions(
+    [UserProfile.createProfile, { user, displayName, dorm }],
+  ),
+});
+
+export const CreateProfileResponse: Sync = ({ request, profile }) => ({
+  when: actions(
+    [Requesting.request, { path: "/UserProfile/createProfile" }, { request }],
+    [UserProfile.createProfile, {}, { profile }],
   ),
   then: actions(
-    [UserProfile.createProfile, { user, displayName: username, dorm: "Not Specified" }],
+    [Requesting.respond, { request, profile }],
   ),
 });
 
 /**
- * Handles an authenticated request to update a user's own profile.
+ * Handles an authenticated request to update a user's profile.
+ * Verifies that the user updating the profile is authenticated and can only update their own profile.
  */
-export const UpdateProfileRequest: Sync = ({ request, accessToken, user, displayName, dorm, bio }) => ({
+export const UpdateProfileRequest: Sync = (
+  { request, accessToken, user, displayName, dorm, bio },
+) => ({
   when: actions(
-    [Requesting.request, { path: "/UserProfile/updateProfile", accessToken, displayName, dorm, bio }, { request }],
+    [Requesting.request, {
+      path: "/UserProfile/updateProfile",
+      accessToken,
+      displayName,
+      dorm,
+      bio,
+    }, { request }],
   ),
-  where: (frames) => frames.query(UserAuthentication._getUserFromToken, { accessToken }, { user }),
+  where: (frames) =>
+    frames.query(UserAuthentication._getUserFromToken, { accessToken }, {
+      user,
+    }),
   then: actions(
     [UserProfile.updateProfile, { user, displayName, dorm, bio }],
   ),
 });
 
-export const UpdateProfileResponse: Sync = ({ request, error }) => ({
+export const UpdateProfileResponse: Sync = ({ request }) => ({
   when: actions(
     [Requesting.request, { path: "/UserProfile/updateProfile" }, { request }],
-    [UserProfile.updateProfile, {}, { error }],
+    [UserProfile.updateProfile, {}, {}],
   ),
   then: actions(
-    [Requesting.respond, { request, status: error ? "error" : "success", message: "Profile updated successfully.", error }],
+    [Requesting.respond, { request }],
   ),
 });
 
@@ -42,41 +75,56 @@ export const UpdateProfileResponse: Sync = ({ request, error }) => ({
  */
 export const LogoutRequest: Sync = ({ request, refreshToken }) => ({
   when: actions(
-    [Requesting.request, { path: "/UserAuthentication/logout", refreshToken }, { request }],
+    [Requesting.request, { path: "/UserAuthentication/logout", refreshToken }, {
+      request,
+    }],
   ),
   then: actions(
     [UserAuthentication.logout, { refreshToken }],
   ),
 });
 
-export const LogoutResponse: Sync = ({ request, error }) => ({
+export const LogoutResponse: Sync = ({ request }) => ({
   when: actions(
     [Requesting.request, { path: "/UserAuthentication/logout" }, { request }],
-    [UserAuthentication.logout, {}, { error }],
+    [UserAuthentication.logout, {}, {}],
   ),
   then: actions(
-    [Requesting.respond, { request, status: error ? "error" : "success", message: "Logged out successfully.", error }],
+    [Requesting.respond, { request }],
   ),
 });
 
 /**
  * Handles an authenticated request to change a user's password.
  */
-export const ChangePasswordRequest: Sync = ({ request, accessToken, oldPassword, newPassword }) => ({
+export const ChangePasswordRequest: Sync = (
+  { request, accessToken, oldPassword, newPassword },
+) => ({
   when: actions(
-    [Requesting.request, { path: "/UserAuthentication/changePassword", accessToken, oldPassword, newPassword }, { request }],
+    [Requesting.request, {
+      path: "/UserAuthentication/changePassword",
+      accessToken,
+      oldPassword,
+      newPassword,
+    }, { request }],
   ),
   then: actions(
-    [UserAuthentication.changePassword, { accessToken, oldPassword, newPassword }],
+    [UserAuthentication.changePassword, {
+      accessToken,
+      oldPassword,
+      newPassword,
+    }],
   ),
 });
 
-export const ChangePasswordResponse: Sync = ({ request, error }) => ({
+export const ChangePasswordResponse: Sync = ({ request }) => ({
   when: actions(
-    [Requesting.request, { path: "/UserAuthentication/changePassword" }, { request }],
-    [UserAuthentication.changePassword, {}, { error }],
+    [Requesting.request, { path: "/UserAuthentication/changePassword" }, {
+      request,
+    }],
+    [UserAuthentication.changePassword, {}, {}],
   ),
   then: actions(
-    [Requesting.respond, { request, status: error ? "error" : "success", error }],
+    [Requesting.respond, { request }],
   ),
 });

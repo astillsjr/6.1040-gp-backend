@@ -26,13 +26,13 @@ export const CreateItemRequest: Sync = (
   ),
 });
 
-export const CreateItemResponse: Sync = ({ request, item, error }) => ({
+export const CreateItemResponse: Sync = ({ request, item }) => ({
   when: actions(
     [Requesting.request, { path: "/Item/createItem" }, { request }],
-    [Item.createItem, {}, { item, error }],
+    [Item.createItem, {}, { item }],
   ),
   then: actions(
-    [Requesting.respond, { request, item, error }],
+    [Requesting.respond, { request, item }],
   ),
 });
 
@@ -86,17 +86,13 @@ export const UpdateItemRequest: Sync = (
   ),
 });
 
-export const UpdateItemResponse: Sync = ({ request, error }) => ({
+export const UpdateItemResponse: Sync = ({ request }) => ({
   when: actions(
     [Requesting.request, { path: "/Item/updateItemDetails" }, { request }],
-    [Item.updateItemDetails, {}, { error }],
+    [Item.updateItemDetails, {}, {}],
   ),
   then: actions(
-    [Requesting.respond, {
-      request,
-      status: error ? "error" : "success",
-      error,
-    }],
+    [Requesting.respond, { request }],
   ),
 });
 
@@ -134,17 +130,13 @@ export const DeleteItemRequest: Sync = (
   ),
 });
 
-export const DeleteItemResponse: Sync = ({ request, error }) => ({
+export const DeleteItemResponse: Sync = ({ request }) => ({
   when: actions(
     [Requesting.request, { path: "/Item/deleteItem" }, { request }],
-    [Item.deleteItem, {}, { error }],
+    [Item.deleteItem, {}, {}],
   ),
   then: actions(
-    [Requesting.respond, {
-      request,
-      status: error ? "error" : "success",
-      error,
-    }],
+    [Requesting.respond, { request }],
   ),
 });
 
@@ -186,16 +178,207 @@ export const ListItemRequest: Sync = (
   ),
 });
 
-export const ListItemResponse: Sync = ({ request, error }) => ({
+export const ListItemResponse: Sync = ({ request }) => ({
   when: actions(
     [Requesting.request, { path: "/ItemListing/listItem" }, { request }],
-    [ItemListing.listItem, {}, { error }],
+    [ItemListing.listItem, {}, {}],
   ),
   then: actions(
-    [Requesting.respond, {
-      request,
-      status: error ? "error" : "success",
-      error,
-    }],
+    [Requesting.respond, { request }],
+  ),
+});
+
+/**
+ * Handles adding a photo to an item. User must be the owner.
+ */
+export const AddPhotoRequest: Sync = (
+  { request, accessToken, user, item, photoUrl, order, itemDoc },
+) => ({
+  when: actions(
+    [Requesting.request, {
+      path: "/ItemListing/addPhoto",
+      accessToken,
+      item,
+      photoUrl,
+      order,
+    }, { request }],
+  ),
+  where: async (frames) => {
+    // Step 1: Authenticate the user.
+    let authorizedFrames = await frames.query(
+      UserAuthentication._getUserFromToken,
+      { accessToken },
+      { user },
+    );
+    // Step 2: Get the item's details.
+    authorizedFrames = await authorizedFrames.query(
+      Item._getItemById,
+      { item },
+      { item: itemDoc },
+    );
+    // Step 3: Authorize: ensure user is owner.
+    return authorizedFrames.filter(($: any) =>
+      $[user] === ($[itemDoc] as any)?.owner
+    );
+  },
+  then: actions(
+    [ItemListing.addPhoto, { item, photoUrl, order }],
+  ),
+});
+
+export const AddPhotoResponse: Sync = ({ request }) => ({
+  when: actions(
+    [Requesting.request, { path: "/ItemListing/addPhoto" }, { request }],
+    [ItemListing.addPhoto, {}, {}],
+  ),
+  then: actions(
+    [Requesting.respond, { request }],
+  ),
+});
+
+/**
+ * Handles removing a photo from an item. User must be the owner.
+ */
+export const RemovePhotoRequest: Sync = (
+  { request, accessToken, user, item, photoUrl, itemDoc },
+) => ({
+  when: actions(
+    [Requesting.request, {
+      path: "/ItemListing/removePhoto",
+      accessToken,
+      item,
+      photoUrl,
+    }, { request }],
+  ),
+  where: async (frames) => {
+    // Step 1: Authenticate the user.
+    let authorizedFrames = await frames.query(
+      UserAuthentication._getUserFromToken,
+      { accessToken },
+      { user },
+    );
+    // Step 2: Get the item's details.
+    authorizedFrames = await authorizedFrames.query(
+      Item._getItemById,
+      { item },
+      { item: itemDoc },
+    );
+    // Step 3: Authorize: ensure user is owner.
+    return authorizedFrames.filter(($: any) =>
+      $[user] === ($[itemDoc] as any)?.owner
+    );
+  },
+  then: actions(
+    [ItemListing.removePhoto, { item, photoUrl }],
+  ),
+});
+
+export const RemovePhotoResponse: Sync = ({ request }) => ({
+  when: actions(
+    [Requesting.request, { path: "/ItemListing/removePhoto" }, { request }],
+    [ItemListing.removePhoto, {}, {}],
+  ),
+  then: actions(
+    [Requesting.respond, { request }],
+  ),
+});
+
+/**
+ * Handles setting an availability window for a borrowable item. User must be the owner.
+ */
+export const SetAvailabilityRequest: Sync = (
+  { request, accessToken, user, item, startTime, endTime, itemDoc },
+) => ({
+  when: actions(
+    [Requesting.request, {
+      path: "/ItemListing/setAvailability",
+      accessToken,
+      item,
+      startTime,
+      endTime,
+    }, { request }],
+  ),
+  where: async (frames) => {
+    // Step 1: Authenticate the user.
+    let authorizedFrames = await frames.query(
+      UserAuthentication._getUserFromToken,
+      { accessToken },
+      { user },
+    );
+    // Step 2: Get the item's details.
+    authorizedFrames = await authorizedFrames.query(
+      Item._getItemById,
+      { item },
+      { item: itemDoc },
+    );
+    // Step 3: Authorize: ensure user is owner.
+    return authorizedFrames.filter(($: any) =>
+      $[user] === ($[itemDoc] as any)?.owner
+    );
+  },
+  then: actions(
+    [ItemListing.setAvailability, { item, startTime, endTime }],
+  ),
+});
+
+export const SetAvailabilityResponse: Sync = ({ request, window }) => ({
+  when: actions(
+    [Requesting.request, { path: "/ItemListing/setAvailability" }, { request }],
+    [ItemListing.setAvailability, {}, { window }],
+  ),
+  then: actions(
+    [Requesting.respond, { request, window }],
+  ),
+});
+
+/**
+ * Handles removing an availability window. User must be the owner.
+ */
+export const RemoveAvailabilityRequest: Sync = (
+  { request, accessToken, user, window, item, itemDoc, windowDoc },
+) => ({
+  when: actions(
+    [Requesting.request, {
+      path: "/ItemListing/removeAvailability",
+      accessToken,
+      window,
+    }, { request }],
+  ),
+  where: async (frames) => {
+    // Step 1: Authenticate the user.
+    let authorizedFrames = await frames.query(
+      UserAuthentication._getUserFromToken,
+      { accessToken },
+      { user },
+    );
+    // Step 2: Get the window details to find the item.
+    authorizedFrames = await authorizedFrames.query(
+      ItemListing._getWindow,
+      { window },
+      { window: windowDoc },
+    );
+    // Step 3: Extract item from window and get item details.
+    authorizedFrames = await authorizedFrames.query(
+      Item._getItemById,
+      { item: ($ : any) => $[windowDoc].item },
+      { item: itemDoc },
+    );
+    // Step 4: Authorize: ensure user is owner.
+    return authorizedFrames.filter(($: any) =>
+      $[user] === ($[itemDoc] as any)?.owner
+    );
+  },
+  then: actions(
+    [ItemListing.removeAvailability, { window }],
+  ),
+});
+
+export const RemoveAvailabilityResponse: Sync = ({ request }) => ({
+  when: actions(
+    [Requesting.request, { path: "/ItemListing/removeAvailability" }, { request }],
+    [ItemListing.removeAvailability, {}, {}],
+  ),
+  then: actions(
+    [Requesting.respond, { request }],
   ),
 });

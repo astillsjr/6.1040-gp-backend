@@ -14,13 +14,13 @@ export const CreateRequestRequest: Sync = ({ request, accessToken, user, item, t
   ),
 });
 
-export const CreateRequestResponse: Sync = ({ request, newRequest, error }) => ({
+export const CreateRequestResponse: Sync = ({ request, newRequest }) => ({
   when: actions(
     [Requesting.request, { path: "/ItemRequesting/createRequest" }, { request }],
-    [ItemRequesting.createRequest, {}, { request: newRequest, error }],
+    [ItemRequesting.createRequest, {}, { request: newRequest }],
   ),
   then: actions(
-    [Requesting.respond, { request, request: newRequest, error }],
+    [Requesting.respond, { request, request: newRequest }],
   ),
 });
 
@@ -43,13 +43,13 @@ export const AcceptRequestRequest: Sync = ({ request, accessToken, user, itemReq
   ),
 });
 
-export const AcceptRequestResponse: Sync = ({ request, error }) => ({
+export const AcceptRequestResponse: Sync = ({ request }) => ({
   when: actions(
     [Requesting.request, { path: "/ItemRequesting/acceptRequest" }, { request }],
-    [ItemRequesting.acceptRequest, {}, { error }],
+    [ItemRequesting.acceptRequest, {}, {}],
   ),
   then: actions(
-    [Requesting.respond, { request, status: error ? "error" : "success", error }],
+    [Requesting.respond, { request }],
   ),
 });
 
@@ -71,12 +71,12 @@ export const CancelRequestRequest: Sync = ({ request, accessToken, user, itemReq
   ),
 });
 
-export const CancelRequestResponse: Sync = ({ request, error }) => ({
+export const CancelRequestResponse: Sync = ({ request }) => ({
   when: actions(
     [Requesting.request, { path: "/ItemRequesting/cancelRequest" }, { request }],
-    [ItemRequesting.cancelRequest, {}, { error }],
+    [ItemRequesting.cancelRequest, {}, {}],
   ),
   then: actions(
-    [Requesting.respond, { request, status: error ? "error" : "success", error }],
+    [Requesting.respond, { request }],
   ),
 });

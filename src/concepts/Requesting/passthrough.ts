@@ -74,11 +74,11 @@ export const exclusions: Array<string> = [
   "/api/UserAuthentication/getUserIdFromAccessToken", // Internal helper method, should not be an endpoint.
   "/api/UserAuthentication/_getUserFromToken",
 
-  // UserProfile: All mutations and system actions require auth and orchestration.
-  "/api/UserProfile/createProfile",
-  "/api/UserProfile/updateProfile",
-  "/api/UserProfile/updateScores", // System action, triggered by syncs.
-  
+  // UserProfile: Actions requiring authentication and authorization checks.
+  "/api/UserProfile/createProfile", // Must verify user can only create their own profile.
+  "/api/UserProfile/updateProfile", // Must verify user can only update their own profile.
+  "/api/UserProfile/updateScores", // System action, triggered by syncs only.
+
   // Item: Mutations and private queries require auth.
   "/api/Item/createItem",
   "/api/Item/createOwnerlessItem",
