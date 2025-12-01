@@ -33,30 +33,44 @@ export const inclusions: Record<string, string> = {
   "/api/LikertSurvey/updateResponse": "allow anyone to update their response",
 
   // UserAuthentication: Public endpoints for registration and login.
-  "/api/UserAuthentication/register": "Public endpoint for new user registration.",
+  "/api/UserAuthentication/register":
+    "Public endpoint for new user registration.",
   "/api/UserAuthentication/login": "Public endpoint for user login.",
-  "/api/UserAuthentication/refreshAccessToken": "Public endpoint to refresh session tokens.",
+  "/api/UserAuthentication/refreshAccessToken":
+    "Public endpoint to refresh session tokens.",
+  "/api/UserAuthentication/_getUserCount":
+    "Public query to get the total number of registered users in the system.",
 
   // Item & ItemListing: Public queries for browsing items and their details without being logged in.
   "/api/Item/_getItemById": "Public query to view a single item's details.",
   "/api/Item/_getAllItems": "Public query to browse all items in the system.",
-  "/api/Item/_getItemsByOwner": "Public query to view items owned by a specific user.",
-  "/api/ItemListing/_getListings": "Public query to browse all available listings.",
-  "/api/ItemListing/_getListingByItem": "Public query to get listing info for an item.",
+  "/api/Item/_getItemsByOwner":
+    "Public query to view items owned by a specific user.",
+  "/api/ItemListing/_getListings":
+    "Public query to browse all available listings.",
+  "/api/ItemListing/_getListingByItem":
+    "Public query to get listing info for an item.",
   "/api/ItemListing/_getPhotosByItem": "Public query to view item photos.",
-  "/api/ItemListing/_getAvailabilityByItem": "Public query to see available borrowing times for an item.",
-  "/api/ItemListing/_getWindow": "Public query to get details of a specific availability window.",
+  "/api/ItemListing/_getAvailabilityByItem":
+    "Public query to see available borrowing times for an item.",
+  "/api/ItemListing/_getWindow":
+    "Public query to get details of a specific availability window.",
 
   // UserProfile: Public queries for viewing profiles and finding community members.
-  "/api/UserProfile/_getProfile": "Public query to view a user's public profile.",
-  "/api/UserProfile/_getUsersByDorm": "Public query to find users within a specific dorm.",
+  "/api/UserProfile/_getProfile":
+    "Public query to view a user's public profile.",
+  "/api/UserProfile/_getUsersByDorm":
+    "Public query to find users within a specific dorm.",
 
   // ItemRequesting: Queries for viewing requests (read-only, useful for dashboards).
-  "/api/ItemRequesting/_getRequestsByItem": "Query to get all requests for a specific item (for owners).",
-  "/api/ItemRequesting/_getRequestsByRequester": "Query to get all requests made by a specific user.",
+  "/api/ItemRequesting/_getRequestsByItem":
+    "Query to get all requests for a specific item (for owners).",
+  "/api/ItemRequesting/_getRequestsByRequester":
+    "Query to get all requests made by a specific user.",
 
   // ItemTransaction: Queries for viewing transactions (read-only, for tracking borrows/lends).
-  "/api/ItemTransaction/_getTransactionsByUser": "Query to get all transactions involving a specific user.",
+  "/api/ItemTransaction/_getTransactionsByUser":
+    "Query to get all transactions involving a specific user.",
 };
 
 /**

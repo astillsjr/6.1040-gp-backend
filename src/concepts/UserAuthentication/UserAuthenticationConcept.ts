@@ -370,4 +370,14 @@ export default class UserAuthenticationConcept {
       const userId = await this.getUserIdFromAccessToken(accessToken);
       return userId ? [{ user: userId }] : [];
     }
+
+  /**
+   * _getUserCount(): (userCount: number)
+   * @requires true
+   * @effects Returns the total number of registered users in the system.
+   */
+  async _getUserCount(_: {} = {}): Promise<{ userCount: number }[]> {
+    const userCount = await this.users.countDocuments();
+    return [{ userCount }];
+  }
 }

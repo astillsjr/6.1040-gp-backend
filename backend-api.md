@@ -1711,6 +1711,39 @@ This document describes the REST API endpoints exposed by the Concept Server. Al
 
 ---
 
+### POST /api/UserAuthentication/_getUserCount
+
+**Description:** Returns the total number of registered users in the system.
+
+**Requirements:**
+- true
+
+**Effects:**
+- Returns the total number of registered users in the system.
+
+**Request Body:**
+```json
+{}
+```
+
+**Success Response Body (Query):**
+```json
+[
+  {
+    "userCount": "number"
+  }
+]
+```
+
+**Error Response Body:**
+```json
+{
+  "error": "string"
+}
+```
+
+---
+
 # API Specification: UserProfile Concept
 
 **Purpose:** To maintain user profile information including display name, dorm affiliation, and other public-facing details that enable community connection and item discovery.
