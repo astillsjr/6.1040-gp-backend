@@ -361,15 +361,17 @@ export default class UserAuthenticationConcept {
     }
   }
 
-    /**
+  /**
    * _getUserFromToken(accessToken: string): (user: User)
    * @requires A valid, non-expired accessToken.
    * @effects Returns the user ID associated with the token.
    */
-    async _getUserFromToken({ accessToken }: { accessToken: string }): Promise<{ user: User }[]> {
-      const userId = await this.getUserIdFromAccessToken(accessToken);
-      return userId ? [{ user: userId }] : [];
-    }
+  async _getUserFromToken(
+    { accessToken }: { accessToken: string },
+  ): Promise<{ user: User }[]> {
+    const userId = await this.getUserIdFromAccessToken(accessToken);
+    return userId ? [{ user: userId }] : [];
+  }
 
   /**
    * _getUserCount(): (userCount: number)
