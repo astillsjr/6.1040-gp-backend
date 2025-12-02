@@ -31,6 +31,7 @@ const VALID_DORMS = [
  *   a createdAt Date
  *   a lenderScore number
  *   a borrowerScore number
+ *   a points number
  */
 interface UserProfile {
   _id: User;
@@ -40,6 +41,7 @@ interface UserProfile {
   createdAt: Date;
   lenderScore: number;
   borrowerScore: number;
+  points: number;
 }
 
 /**
@@ -80,6 +82,7 @@ export default class UserProfileConcept {
       createdAt: new Date(),
       lenderScore: 0,
       borrowerScore: 0,
+      points: 0,
     };
 
     await this.users.insertOne(profile);
@@ -119,6 +122,29 @@ export default class UserProfileConcept {
     const result = await this.users.updateOne(
       { _id: user },
       { $set: { lenderScore, borrowerScore } },
+    );
+
+    if (result.matchedCount === 0) {
+      return { error: "User profile not found." };
+    }
+
+    return {};
+  }
+
+  /**
+   * addPoints (user: User, amount: Number): Empty | (error: string)
+   *
+   * **requires**: The user must have a profile. The amount must be positive.
+   * **effects**: Adds the specified amount to the user's points balance.
+   */
+  async addPoints({ user, amount }: { user: User; amount: number }): Promise<Empty | { error: string }> {
+    if (amount <= 0) {
+      return { error: "Amount must be positive." };
+    }
+
+    const result = await this.users.updateOne(
+      { _id: user },
+      { $inc: { points: amount } },
     );
 
     if (result.matchedCount === 0) {

@@ -27,14 +27,15 @@ export const CreateTransactionOnAccept: Sync = ({ request, requestDoc, itemDoc }
 });
 
 /**
- * CONCEPT-TO-CONCEPT: When a transaction is created, update the item's listing status to 'PENDING'.
+ * CONCEPT-TO-CONCEPT: When a transaction is created, update the item's listing status to 'CLAIMED'.
+ * Note: This may have already been set to 'CLAIMED' when the request was accepted, but we ensure it here.
  */
 export const UpdateListingOnTransactionCreate: Sync = ({ item }) => ({
   when: actions(
     [ItemTransaction.createTransaction, { item }, {}],
   ),
   then: actions(
-    [ItemListing.updateListingStatus, { item, status: "PENDING" }],
+    [ItemListing.updateListingStatus, { item, status: "CLAIMED" }],
   ),
 });
 

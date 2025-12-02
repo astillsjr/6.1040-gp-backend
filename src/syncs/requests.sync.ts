@@ -2,8 +2,10 @@ import { actions, Sync } from "@engine";
 import {
   Item,
   ItemRequesting,
+  ItemListing,
   Requesting,
   UserAuthentication,
+  UserProfile,
 } from "@concepts";
 
 /**
@@ -87,6 +89,34 @@ export const AcceptRequestRequest: Sync = (
   },
   then: actions(
     [ItemRequesting.acceptRequest, { request: itemRequest }],
+  ),
+});
+
+/**
+ * CONCEPT-TO-CONCEPT: When a request is accepted, award points to both users and update listing status.
+ */
+export const AwardPointsOnAccept: Sync = ({ itemRequest, requestDoc, itemDoc }) => ({
+  when: actions(
+    [ItemRequesting.acceptRequest, { request: itemRequest }, {}],
+  ),
+  where: async (frames) => {
+    // Get the request document to find the requester
+    let framesWithRequest = await frames.query(
+      ItemRequesting._getRequest,
+      { request: itemRequest },
+      { requestDoc },
+    );
+    // Get the item document to find the owner
+    return await framesWithRequest.query(
+      Item._getItemById,
+      { item: requestDoc.item },
+      { item: itemDoc },
+    );
+  },
+  then: actions(
+    [ItemListing.updateListingStatus, { item: requestDoc.item, status: "CLAIMED" }],
+    [UserProfile.addPoints, { user: itemDoc.owner, amount: 100 }],
+    [UserProfile.addPoints, { user: requestDoc.requester, amount: 100 }],
   ),
 });
 
