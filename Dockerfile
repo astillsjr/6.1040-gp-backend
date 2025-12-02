@@ -7,9 +7,7 @@ USER deno
 WORKDIR /app
 
 # Expose the port the application will listen on.
-# The port is dynamically set via the PORT environment variable (required by Render).
-# Falls back to 10000 if PORT is not set (for local development).
-# Note: EXPOSE is just documentation; the actual port is controlled by the PORT env var.
+# The Requesting concept defaults to PORT 10000.
 EXPOSE 10000
 
 # Copy all application files into the working directory.
