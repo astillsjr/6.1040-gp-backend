@@ -71,6 +71,18 @@ export const inclusions: Record<string, string> = {
   // ItemTransaction: Queries for viewing transactions (read-only, for tracking borrows/lends).
   "/api/ItemTransaction/_getTransactionsByUser":
     "Query to get all transactions involving a specific user.",
+
+  // Reviewing: Public queries for viewing reviews (trust & transparency).
+  "/api/Reviewing/_getReviewById":
+    "Public query to view a specific review.",
+  "/api/Reviewing/_getReviewsForTransaction":
+    "Public query to see all reviews for a completed transaction.",
+  "/api/Reviewing/_getReviewsByReviewee":
+    "Public query to view reviews received by a user (for trust scores).",
+  "/api/Reviewing/_getReviewsByReviewer":
+    "Public query to view reviews written by a user.",
+  "/api/Reviewing/_getReviewForTransactionByReviewer":
+    "Public query to check if a user has reviewed a transaction.",
 };
 
 /**
@@ -132,4 +144,20 @@ export const exclusions: Array<string> = [
   "/api/ItemTransaction/confirmReturn",
   "/api/ItemTransaction/cancelTransaction",
   "/api/ItemTransaction/_getTransaction", // Exposes private transaction details.
+
+  // Reviewing: Mutations require auth (verify reviewer is party to transaction).
+  "/api/Reviewing/submitReview",
+  "/api/Reviewing/editReview",
+  "/api/Reviewing/deleteReview",
+
+  // Flagging: All routes require auth. Actions need user verification, queries are admin-only.
+  "/api/Flagging/flagUser",
+  "/api/Flagging/flagItemAndUser",
+  "/api/Flagging/resolveFlag", // Admin action
+  "/api/Flagging/dismissFlag", // Admin action
+  "/api/Flagging/_getFlagById", // Admin query
+  "/api/Flagging/_getFlags", // Admin query (moderation dashboard)
+  "/api/Flagging/_getFlagsByUser", // Admin query
+  "/api/Flagging/_getFlagsForUser", // Admin query
+  "/api/Flagging/_getFlagsForItem", // Admin query
 ];

@@ -1,0 +1,203 @@
+---
+timestamp: 'Tue Dec 02 2025 04:23:35 GMT-0500 (Eastern Standard Time)'
+parent: '[[..\20251202_042335.3d91a7a4.md]]'
+content_id: ee022ffcd531e3178268271d8303f0e90695625627b69c0178901fe8ebc90b16
+---
+
+# file: src\concepts\Flagging\FlaggingConcept.ts
+
+```typescript
+import { Collection, Db } from "npm:mongodb";
+import { Empty, ID } from "@utils/types.ts";
+import { freshID } from "@utils/database.ts";
+
+const PREFIX = "Flagging.";
+
+// Generic types used by this concept
+type User = ID;
+type Item = ID;
+type Flag = ID;
+
+type FlagStatus = "PENDING" | "RESOLVED" | "DISMISSED";
+
+/**
+ * a set of Flags with
+ *   a flagger User
+ *   a flaggedUser User
+ *   an optional flaggedItem Item
+ *   a reason String
+ *   a status of PENDING or RESOLVED or DISMISSED
+ *   a createdAt Date
+ */
+interface FlagDoc {
+  _id: Flag;
+  flagger: User;
+  flaggedUser: User;
+  flaggedItem?: Item;
+  reason: string;
+  status: FlagStatus;
+  createdAt: Date;
+}
+
+/**
+ * Flagging
+ *
+ * purpose: To enable community-driven moderation by allowing users to report inappropriate content or problematic behavior for administrative review.
+ */
+export default class FlaggingConcept {
+  flags: Collection<FlagDoc>;
+
+  constructor(private readonly db: Db) {
+    this.flags = this.db.collection<FlagDoc>(PREFIX + "flags");
+  }
+
+  /**
+   * flagUser (flagger: User, flaggedUser: User, reason: String): (flag: Flag)
+   *
+   * **requires**: The flagger and flagged must be different users.
+   *
+   * **effects**: Creates a new flag with status PENDING.
+   */
+  async flagUser({ flagger, flaggedUser, reason }: { flagger: User; flaggedUser: User; reason: string }): Promise<{ flag: Flag } | { error: string }> {
+    if (flagger === flaggedUser) {
+      return { error: "A user cannot flag themselves." };
+    }
+
+    const flagId = freshID() as Flag;
+    const result = await this.flags.insertOne({
+      _id: flagId,
+      flagger,
+      flaggedUser,
+      reason,
+      status: "PENDING",
+      createdAt: new Date(),
+    });
+
+    if (!result.acknowledged) {
+      return { error: "Failed to create flag." };
+    }
+    return { flag: flagId };
+  }
+
+  /**
+   * flagItemAndUser (flagger: User, flaggedUser: User, flaggedItem: Item, reason: String): (flag: Flag)
+   * NOTE: This action is added to fulfill the concept's principle of flagging items, which is not covered by the `flagUser` action alone.
+   *
+   * **requires**: The flagger and flagged must be different users.
+   *
+   * **effects**: Creates a new flag with status PENDING, linked to the specified item.
+   */
+  async flagItemAndUser({ flagger, flaggedUser, flaggedItem, reason }: { flagger: User; flaggedUser: User; flaggedItem: Item; reason: string }): Promise<{ flag: Flag } | { error: string }> {
+    if (flagger === flaggedUser) {
+      return { error: "A user cannot flag themselves." };
+    }
+    const flagId = freshID() as Flag;
+    const result = await this.flags.insertOne({
+      _id: flagId,
+      flagger,
+      flaggedUser,
+      flaggedItem,
+      reason,
+      status: "PENDING",
+      createdAt: new Date(),
+    });
+
+    if (!result.acknowledged) {
+      return { error: "Failed to create flag." };
+    }
+    return { flag: flagId };
+  }
+
+  /**
+   * resolveFlag (flag: Flag): ()
+   *
+   * **requires**: The flag must be in PENDING status.
+   *
+   * **effects**: Sets the flag status to RESOLVED.
+   */
+  async resolveFlag({ flag }: { flag: Flag }): Promise<Empty | { error: string }> {
+    const existingFlag = await this.flags.findOne({ _id: flag });
+    if (!existingFlag) {
+      return { error: `Flag with id ${flag} not found.` };
+    }
+    if (existingFlag.status !== "PENDING") {
+      return { error: "Flag must be in PENDING status to be resolved." };
+    }
+
+    const result = await this.flags.updateOne({ _id: flag }, { $set: { status: "RESOLVED" } });
+
+    if (result.modifiedCount === 0) {
+      return { error: "Failed to resolve flag." };
+    }
+    return {};
+  }
+
+  /**
+   * dismissFlag(flag: Flag): ()
+   *
+   * **requires**: The flag must be in `PENDING` status.
+   *
+   * **effects**: Sets the flag status to `DISMISSED`.
+   */
+  async dismissFlag({ flag }: { flag: Flag }): Promise<Empty | { error: string }> {
+    const existingFlag = await this.flags.findOne({ _id: flag });
+    if (!existingFlag) {
+      return { error: `Flag with id ${flag} not found.` };
+    }
+    if (existingFlag.status !== "PENDING") {
+      return { error: "Flag must be in PENDING status to be dismissed." };
+    }
+
+    const result = await this.flags.updateOne({ _id: flag }, { $set: { status: "DISMISSED" } });
+
+    if (result.modifiedCount === 0) {
+      return { error: "Failed to dismiss flag." };
+    }
+    return {};
+  }
+
+  // QUERIES
+
+  /**
+   * _getFlagById(flag: Flag): (flagDoc: FlagDoc)
+   * Returns the full document for the specified flag.
+   */
+  async _getFlagById({ flag }: { flag: Flag }): Promise<FlagDoc[]> {
+    const result = await this.flags.findOne({ _id: flag });
+    return result ? [result] : [];
+  }
+
+  /**
+   * _getFlags(status?: FlagStatus): (flags: FlagDoc[])
+   * Returns all flags, optionally filtered by status. Essential for a moderation dashboard.
+   */
+  async _getFlags({ status }: { status?: FlagStatus }): Promise<FlagDoc[]> {
+    const query = status ? { status } : {};
+    return await this.flags.find(query).toArray();
+  }
+
+  /**
+   * _getFlagsByUser(user: User): (flags: FlagDoc[])
+   * Returns all flags created by a specific user.
+   */
+  async _getFlagsByUser({ user }: { user: User }): Promise<FlagDoc[]> {
+    return await this.flags.find({ flagger: user }).toArray();
+  }
+
+  /**
+   * _getFlagsForUser(user: User): (flags: FlagDoc[])
+   * Returns all flags raised against a specific user. Useful for tracking problematic users.
+   */
+  async _getFlagsForUser({ user }: { user: User }): Promise<FlagDoc[]> {
+    return await this.flags.find({ flaggedUser: user }).toArray();
+  }
+
+  /**
+   * _getFlagsForItem(item: Item): (flags: FlagDoc[])
+   * Returns all flags associated with a specific item.
+   */
+  async _getFlagsForItem({ item }: { item: Item }): Promise<FlagDoc[]> {
+    return await this.flags.find({ flaggedItem: item }).toArray();
+  }
+}
+```

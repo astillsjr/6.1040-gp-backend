@@ -1,11 +1,8 @@
-[@concept-background](../../tools/concept-background.md)
-
-[@Reviewing](Reviewing.md)
-
-[@ReviewingImplementation](../../../src/concepts/Reviewing/ReviewingConcept.ts)
-
-# prompt: Look at the guidelines in the testing-concepts file. Generate the test file for the Reviewing concept. Make sure to look at both the Reviewing concept spec and Reviewing typescript implementation. Make sure that there is no TypeScript or Lint errors in the testing suite youb give me
-# response:
+---
+timestamp: 'Tue Dec 02 2025 04:17:13 GMT-0500 (Eastern Standard Time)'
+parent: '[[..\20251202_041713.2e30dfbc.md]]'
+content_id: 5438defbc9890324cd720449b603af9ba8906f7e0bccc24365cc795043484d8d
+---
 
 # file: src/concepts/Reviewing/ReviewingConcept.test.ts
 

@@ -1,3 +1,12 @@
+---
+timestamp: 'Tue Dec 02 2025 04:16:40 GMT-0500 (Eastern Standard Time)'
+parent: '[[..\20251202_041640.cce37b75.md]]'
+content_id: 8c8e90e5fcd442da048fe108eba24a37ad532d9b793ff4860490f7e8477ac9d5
+---
+
+# file: src\concepts\Reviewing\ReviewingConcept.ts
+
+```typescript
 import { Collection, Db } from "npm:mongodb";
 import { Empty, ID } from "@utils/types.ts";
 import { freshID } from "@utils/database.ts";
@@ -182,3 +191,4 @@ export default class ReviewingConcept {
     return foundReview ? [{ review: foundReview }] : [];
   }
 }
+```
