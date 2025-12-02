@@ -136,22 +136,24 @@ Deno.test("ItemListing Concept: Action Tests", async (t) => {
     },
   );
 
-  await t.step("setAvailability: requires BORROW type", async () => {
-    console.log("Testing: setAvailability requires BORROW type");
+  await t.step("setAvailability: works for TRANSFER type", async () => {
+    console.log("Testing: setAvailability works for TRANSFER type");
     const listedItem = await itemListing._getListingByItem({ item: itemB });
     assertEquals(listedItem[0]?.type, "TRANSFER"); // From first test
     const start = new Date("2024-01-02T10:00:00Z");
     const end = new Date("2024-01-02T12:00:00Z");
-    const errResult = await itemListing.setAvailability({
+    const result = await itemListing.setAvailability({
       item: itemB,
       startTime: start,
       endTime: end,
     });
-    if (!("error" in errResult)) {
-      throw new Error("Expected an error for TRANSFER type");
+    if ("error" in result) {
+      throw new Error(`Expected success but got error: ${result.error}`);
     }
-    assertEquals(errResult.error, `Item ${itemB} is for TRANSFER, not BORROW.`);
-    console.log("  -> Requirement met.");
+    // Verify window was created
+    const windows = await itemListing._getAvailabilityWindows({ item: itemB });
+    assertEquals(windows.length, 1);
+    console.log("  -> TRANSFER items can have availability windows.");
   });
 
   await t.step("reserveWindow: requires AVAILABLE status", async () => {

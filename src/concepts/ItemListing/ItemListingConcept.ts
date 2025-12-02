@@ -159,16 +159,14 @@ export default class ItemListingConcept {
   /**
    * setAvailability (item: Item, startTime: DateTime, endTime: DateTime): (window: AvailabilityWindow)
    *
-   * **requires**: The item must be listed with type BORROW. The window must not overlap with existing windows.
-   * **effects**: Creates a new availability window for a borrowable item.
+   * **requires**: The item must be listed. The window must not overlap with existing windows.
+   * **effects**: Creates a new availability window indicating when the owner is available for pickup/handoff.
+   * For BORROW items, this is when borrowers can pick up. For TRANSFER items, this is when recipients can collect.
    */
   async setAvailability({ item, startTime, endTime }: { item: Item; startTime: Date; endTime: Date }): Promise<{ window: AvailabilityWindow } | { error: string }> {
     const listing = await this.listings.findOne({ _id: item });
     if (!listing) {
       return { error: `Item ${item} is not listed.` };
-    }
-    if (listing.type !== "BORROW") {
-      return { error: `Item ${item} is for TRANSFER, not BORROW.` };
     }
     if (startTime >= endTime) {
       return { error: `Start time must be before end time.` };
