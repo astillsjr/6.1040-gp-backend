@@ -296,14 +296,4 @@ export default class ItemListingConcept {
     if (dormVisibility) filter.dormVisibility = dormVisibility;
     return await this.listings.find(filter).toArray();
   }
-
-  /**
-   * _getAvailableItemsCount(): (itemCount: number)
-   * @requires true
-   * @effects Returns the total number of available items (listings with status AVAILABLE) in the system.
-   */
-  async _getAvailableItemsCount(_: {} = {}): Promise<{ itemCount: number }[]> {
-    const itemCount = await this.listings.countDocuments({ status: "AVAILABLE" });
-    return [{ itemCount }];
-  }
 }
