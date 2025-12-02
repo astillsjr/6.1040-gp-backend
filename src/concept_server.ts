@@ -1,11 +1,12 @@
 import { Hono } from "jsr:@hono/hono";
+import { cors } from "jsr:@hono/hono/cors";
 import { getDb } from "@utils/database.ts";
 import { walk } from "jsr:@std/fs";
 import { parseArgs } from "jsr:@std/cli/parse-args";
 import { toFileUrl } from "jsr:@std/path/to-file-url";
 import "jsr:@std/dotenv/load";
 
-// Parse command-line arguments for port and base URL
+// Parse command-line args
 const envPort = Deno.env.get("PORT");
 const flags = parseArgs(Deno.args, {
   string: ["port", "baseUrl"],
@@ -33,10 +34,12 @@ if (envAllowedDomains) {
     if (trimmed.length > 0) allowedOrigins.add(trimmed);
   }
 }
+
 if (envSingleDomain) allowedOrigins.add(envSingleDomain);
 
 const allowedOriginsList = Array.from(allowedOrigins);
 
+// localhost patterns
 const LOCALHOST_PATTERNS = [
   /^http:\/\/localhost:\d+$/,
   /^http:\/\/127\.0\.0\.1:\d+$/,
@@ -54,49 +57,62 @@ const isOriginAllowed = (origin: string | undefined): string | undefined => {
     }
   }
 
-  const isLocalhost = LOCALHOST_PATTERNS.some((pattern) =>
-    pattern.test(origin)
-  );
-  if (isLocalhost) return origin;
+  if (LOCALHOST_PATTERNS.some((p) => p.test(origin))) return origin;
 
   return undefined;
 };
 
 console.log(`[CORS] Allowed origins: ${allowedOriginsList.join(", ")}`);
 
-/**
- * Main server function to initialize DB, load concepts, and start the server.
- */
+// --- Main server ---
 async function main() {
   const [db] = await getDb();
   const app = new Hono();
 
-  // --- GLOBAL CORS PRE-FLIGHT & RESPONSE HANDLER ---
-  app.use("*", async (c, next) => {
+  // --- OPTIONS preflight handler ---
+  app.options("*", (c) => {
     const origin = c.req.header("Origin");
-    const allowedOrigin = isOriginAllowed(origin);
+    const allowed = isOriginAllowed(origin);
 
-    if (c.req.method === "OPTIONS") {
-      if (allowedOrigin) {
-        return c.text("", 204, {
-          "Access-Control-Allow-Origin": allowedOrigin,
-          "Access-Control-Allow-Methods":
-            "GET, POST, PUT, DELETE, OPTIONS, PATCH",
-          "Access-Control-Allow-Headers":
-            "Content-Type, Authorization, X-Requested-With",
-          "Access-Control-Allow-Credentials": "true",
-          "Access-Control-Max-Age": "86400",
-        });
-      } else {
-        return c.text("CORS not allowed", 403);
-      }
+    if (allowed) {
+      const resp = c.status(204); // no body
+      resp.header("Access-Control-Allow-Origin", allowed);
+      resp.header(
+        "Access-Control-Allow-Methods",
+        "GET, POST, PUT, DELETE, OPTIONS, PATCH",
+      );
+      resp.header(
+        "Access-Control-Allow-Headers",
+        "Content-Type, Authorization, X-Requested-With",
+      );
+      resp.header("Access-Control-Allow-Credentials", "true");
+      resp.header("Access-Control-Max-Age", "86400");
+      return resp;
     }
 
-    const resp = await next();
+    return c.text("CORS not allowed", 403);
+  });
 
-    // Add CORS headers to all responses
-    if (allowedOrigin && !c.res.headers.get("Access-Control-Allow-Origin")) {
-      c.header("Access-Control-Allow-Origin", allowedOrigin);
+  // --- CORS middleware for all routes ---
+  app.use(
+    "*",
+    cors({
+      allowMethods: ["GET", "POST", "PUT", "DELETE", "OPTIONS", "PATCH"],
+      allowHeaders: ["Content-Type", "Authorization", "X-Requested-With"],
+      exposeHeaders: ["Content-Length", "Content-Type", "Authorization"],
+      maxAge: 86400,
+      credentials: true,
+      origin: (origin) => isOriginAllowed(origin),
+    }),
+  );
+
+  // Backup middleware to ensure headers
+  app.use("*", async (c, next) => {
+    await next();
+    const origin = c.req.header("Origin");
+    const allowed = isOriginAllowed(origin);
+    if (allowed && !c.res.headers.get("Access-Control-Allow-Origin")) {
+      c.header("Access-Control-Allow-Origin", allowed);
       c.header(
         "Access-Control-Allow-Methods",
         "GET, POST, PUT, DELETE, OPTIONS, PATCH",
@@ -107,16 +123,13 @@ async function main() {
       );
       c.header("Access-Control-Allow-Credentials", "true");
     }
-
-    return resp;
   });
 
+  // Health check
   app.get("/", (c) => c.text("Concept Server is running."));
-  app.get("/health", (c) => c.json({ status: "ok", port: PORT }));
 
-  // --- Dynamic Concept Loading and Routing ---
+  // --- Dynamic concept loading ---
   console.log(`Scanning for concepts in ./${CONCEPTS_DIR}...`);
-
   for await (
     const entry of walk(CONCEPTS_DIR, {
       maxDepth: 1,
@@ -166,7 +179,7 @@ async function main() {
             return c.json(result);
           } catch (e) {
             console.error(`Error in ${conceptName}.${methodName}:`, e);
-            return c.json({ error: "An internal server error occurred." }, 500);
+            return c.json({ error: "Internal server error." }, 500);
           }
         });
         console.log(`  - Endpoint: POST ${route}`);
@@ -176,9 +189,8 @@ async function main() {
     }
   }
 
-  console.log(`\nServer listening on http://0.0.0.0:${PORT}`);
-  Deno.serve({ port: PORT, hostname: "0.0.0.0" }, app.fetch);
+  console.log(`\nServer listening on http://localhost:${PORT}`);
+  Deno.serve({ port: PORT }, app.fetch);
 }
 
-// Run the server
 main();
