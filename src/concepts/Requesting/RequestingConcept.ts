@@ -195,14 +195,47 @@ export function startRequestingServer(
     throw new Error("Requesting concept missing or broken.");
   }
   const app = new Hono();
-  app.use(
-    "/*",
-    cors({
-      origin: REQUESTING_ALLOWED_DOMAIN === "*" ? "*" : REQUESTING_ALLOWED_DOMAIN,
-      allowMethods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
-      allowHeaders: ["Content-Type", "Authorization"],
-    }),
-  );
+
+  // CORS configuration with support for development and production
+  const corsConfig: Parameters<typeof cors>[0] = {
+    allowMethods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
+    allowHeaders: ["Content-Type", "Authorization"],
+  };
+
+  // Handle origin configuration
+  if (REQUESTING_ALLOWED_DOMAIN === "*") {
+    // For development: allow all origins (but credentials won't work)
+    corsConfig.origin = "*";
+  } else {
+    // For production: allow specific origin with credentials
+    corsConfig.origin = REQUESTING_ALLOWED_DOMAIN;
+    corsConfig.credentials = true;
+  }
+
+  app.use("/*", cors(corsConfig));
+
+  // Health check endpoint
+  app.get("/health", (c) => {
+    return c.json({
+      status: "ok",
+      message: "Server is running",
+      port: PORT,
+      baseUrl: REQUESTING_BASE_URL,
+    });
+  });
+
+  app.get("/", (c) => {
+    return c.json({
+      status: "ok",
+      message: "Requesting server is running",
+      port: PORT,
+      baseUrl: REQUESTING_BASE_URL,
+      endpoints: {
+        health: "/health",
+        api: `${REQUESTING_BASE_URL}/*`,
+      },
+    });
+  });
 
   /**
    * PASSTHROUGH ROUTES
@@ -305,8 +338,17 @@ export function startRequestingServer(
   console.log(
     `\n🚀 Requesting server listening for POST requests at base path of ${routePath}`,
   );
+  console.log(`\n📡 Server Configuration:`);
+  console.log(`   - Port: ${PORT}`);
+  console.log(`   - Base URL: ${REQUESTING_BASE_URL}`);
+  console.log(`   - CORS Origin: ${REQUESTING_ALLOWED_DOMAIN}`);
+  console.log(`   - Health Check: http://localhost:${PORT}/health`);
+  console.log(`   - API Base: http://localhost:${PORT}${REQUESTING_BASE_URL}`);
 
   // Bind to 0.0.0.0 to accept connections from external hosts (required for production)
   Deno.serve({ port: PORT, hostname: "0.0.0.0" }, app.fetch);
-  console.log(`Server listening on http://0.0.0.0:${PORT}`);
+  console.log(`\n✅ Server is ready and listening on http://0.0.0.0:${PORT}`);
+  console.log(
+    `   Frontend should connect to: http://localhost:${PORT}${REQUESTING_BASE_URL}\n`,
+  );
 }
