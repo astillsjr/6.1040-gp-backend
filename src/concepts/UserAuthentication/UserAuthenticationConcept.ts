@@ -142,7 +142,10 @@ export default class UserAuthenticationConcept {
       createdAt: new Date(),
     };
     const insertResult = await this.users.insertOne(newUser);
-    console.log(`[Register] Created user '${username}' with ID ${newUser._id}, insert result:`, insertResult.insertedId);
+    console.log(
+      `[Register] Created user '${username}' with ID ${newUser._id}, insert result:`,
+      insertResult.insertedId,
+    );
 
     // Effect: returns a new pair of session tokens
     const tokens = await this.createTokenPair(newUser._id);
@@ -158,23 +161,29 @@ export default class UserAuthenticationConcept {
   async login(
     { username, password }: { username: string; password: string },
   ): Promise<
-    { user: User; accessToken: string; refreshToken: string } | { error: string }
+    { user: User; accessToken: string; refreshToken: string } | {
+      error: string;
+    }
   > {
     // Trim username to handle any whitespace issues
     const trimmedUsername = username.trim();
-    
+
     // Requirement: username must match an existing user
     const user = await this.users.findOne({ username: trimmedUsername });
     if (!user) {
       // Check if any users exist at all (for debugging)
       const userCount = await this.users.countDocuments();
-      console.log(`[Login] User '${trimmedUsername}' not found. Total users in DB: ${userCount}`);
+      console.log(
+        `[Login] User '${trimmedUsername}' not found. Total users in DB: ${userCount}`,
+      );
       return { error: "Invalid username or password." };
     }
 
     // Requirement: password must match
     if (!user.hashedPassword) {
-      console.error(`[Login] User '${trimmedUsername}' found but has no hashedPassword`);
+      console.error(
+        `[Login] User '${trimmedUsername}' found but has no hashedPassword`,
+      );
       return { error: "Invalid username or password." };
     }
 
@@ -186,7 +195,9 @@ export default class UserAuthenticationConcept {
 
     // Effect: Creates a new session and returns a new pair of tokens
     const tokens = await this.createTokenPair(user._id);
-    console.log(`[Login] Successfully logged in user '${trimmedUsername}' (${user._id})`);
+    console.log(
+      `[Login] Successfully logged in user '${trimmedUsername}' (${user._id})`,
+    );
     return { user: user._id, ...tokens };
   }
 
@@ -403,8 +414,10 @@ export default class UserAuthenticationConcept {
    * @effects Returns all usernames in the system (for debugging).
    */
   async _getAllUsernames(_: {} = {}): Promise<{ usernames: string[] }[]> {
-    const users = await this.users.find({}, { projection: { username: 1, _id: 0 } }).toArray();
-    const usernames = users.map(u => u.username);
+    const users = await this.users.find({}, {
+      projection: { username: 1, _id: 0 },
+    }).toArray();
+    const usernames = users.map((u) => u.username);
     console.log(`[Debug] All usernames in database:`, usernames);
     return [{ usernames }];
   }
