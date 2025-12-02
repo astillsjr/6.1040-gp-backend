@@ -48,6 +48,8 @@ export const inclusions: Record<string, string> = {
     "Public query to view items owned by a specific user.",
   "/api/ItemListing/_getListings":
     "Public query to browse all available listings.",
+  "/api/ItemListing/_getAvailableItemsCount":
+    "Public query to get the total number of available items in the system.",
   "/api/ItemListing/_getListingByItem":
     "Public query to get listing info for an item.",
   "/api/ItemListing/_getPhotosByItem": "Public query to view item photos.",
