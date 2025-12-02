@@ -22,17 +22,51 @@ const REQUESTING_TIMEOUT = parseInt(
   10,
 );
 
-// CORS configuration: Set REQUESTING_ALLOWED_DOMAIN to your frontend URL in production
-// For production: Set to "https://localloop-frontend.onrender.com" (or your frontend URL)
-// For development: Can use "*" (but credentials will be disabled)
-// When set to a specific domain, credentials: true is enabled for secure cookie/auth handling
-// The origin function will automatically allow localhost for local development
-const REQUESTING_ALLOWED_DOMAIN = Deno.env.get("REQUESTING_ALLOWED_DOMAIN") ??
-  "*";
+// CORS configuration: Support multiple allowed origins
+// Production frontend URL - always allowed
+const PRODUCTION_FRONTEND = "https://localloop-frontend.onrender.com";
+
+// Parse allowed origins from environment variable (comma-separated)
+// Or use single REQUESTING_ALLOWED_DOMAIN for backward compatibility
+const envAllowedDomains = Deno.env.get("REQUESTING_ALLOWED_ORIGINS");
+const envSingleDomain = Deno.env.get("REQUESTING_ALLOWED_DOMAIN");
+
+// Build list of allowed origins
+const allowedOrigins: string[] = [];
+
+// Always include production frontend
+allowedOrigins.push(PRODUCTION_FRONTEND);
+
+// Add origins from REQUESTING_ALLOWED_ORIGINS (comma-separated)
+if (envAllowedDomains) {
+  const origins = envAllowedDomains.split(",").map((o) => o.trim()).filter((o) =>
+    o.length > 0
+  );
+  allowedOrigins.push(...origins);
+}
+
+// Add single domain from REQUESTING_ALLOWED_DOMAIN (backward compatibility)
+if (envSingleDomain && !allowedOrigins.includes(envSingleDomain)) {
+  allowedOrigins.push(envSingleDomain);
+}
 
 // Log the CORS configuration at startup for debugging
-console.log(`[CORS] Environment variable REQUESTING_ALLOWED_DOMAIN: ${Deno.env.get("REQUESTING_ALLOWED_DOMAIN") ?? "(not set, using default '*')"}`);
-console.log(`[CORS] Resolved REQUESTING_ALLOWED_DOMAIN: ${REQUESTING_ALLOWED_DOMAIN}`);
+console.log(
+  `[CORS] Environment variable REQUESTING_ALLOWED_ORIGINS: ${
+    envAllowedDomains ?? "(not set)"
+  }`,
+);
+console.log(
+  `[CORS] Environment variable REQUESTING_ALLOWED_DOMAIN: ${
+    envSingleDomain ?? "(not set)"
+  }`,
+);
+console.log(
+  `[CORS] Allowed origins: ${allowedOrigins.join(", ")}`,
+);
+console.log(
+  `[CORS] Production frontend (always allowed): ${PRODUCTION_FRONTEND}`,
+);
 
 // Common localhost ports for development
 const LOCALHOST_PATTERNS = [
@@ -213,47 +247,58 @@ export function startRequestingServer(
   const isOriginAllowed = (origin: string | undefined): string | undefined => {
     if (!origin) {
       // Allow requests with no origin (like mobile apps or curl requests)
-      return REQUESTING_ALLOWED_DOMAIN === "*" ? "*" : REQUESTING_ALLOWED_DOMAIN;
+      // Return the first allowed origin (production frontend)
+      return allowedOrigins.length > 0 ? allowedOrigins[0] : PRODUCTION_FRONTEND;
     }
-    
-    // Normalize origins (remove trailing slashes)
-    const normalizedOrigin = origin.replace(/\/+$/, "");
-    
-    if (REQUESTING_ALLOWED_DOMAIN === "*") {
-      return "*";
+
+    // Normalize origins (remove trailing slashes and convert to lowercase for comparison)
+    const normalizedOrigin = origin.replace(/\/+$/, "").toLowerCase();
+
+    // Check if it matches any of the allowed origins
+    for (const allowed of allowedOrigins) {
+      const normalizedAllowed = allowed.replace(/\/+$/, "").toLowerCase();
+      if (normalizedOrigin === normalizedAllowed) {
+        return origin; // Return original origin (with original case)
+      }
     }
-    
-    const normalizedAllowed = REQUESTING_ALLOWED_DOMAIN.replace(/\/+$/, "");
-    
-    // Check if it matches the production domain
-    if (normalizedOrigin === normalizedAllowed) {
-      return origin;
-    }
-    
+
     // Check if it's a localhost origin (for local development)
-    const isLocalhost = LOCALHOST_PATTERNS.some(pattern => pattern.test(origin));
+    const isLocalhost = LOCALHOST_PATTERNS.some((pattern) =>
+      pattern.test(origin)
+    );
     if (isLocalhost) {
       return origin;
     }
-    
+
     return undefined;
   };
 
-  console.log(`[CORS] Configured to allow origin: ${REQUESTING_ALLOWED_DOMAIN}${REQUESTING_ALLOWED_DOMAIN !== "*" ? " (and localhost for development)" : ""}`);
+  console.log(
+    `[CORS] Configured to allow origins: ${allowedOrigins.join(", ")} (and localhost for development)`,
+  );
 
   // Handle OPTIONS requests FIRST to ensure preflight works
   app.options("*", async (c) => {
     const origin = c.req.header("Origin");
     console.log(`[CORS] OPTIONS preflight request from origin: "${origin}"`);
-    
+
     const allowedOrigin = isOriginAllowed(origin);
-    
+
     if (allowedOrigin) {
-      console.log(`[CORS] ✅ OPTIONS preflight allowed for: "${allowedOrigin}"`);
+      console.log(
+        `[CORS] ✅ OPTIONS preflight allowed for: "${allowedOrigin}"`,
+      );
       c.header("Access-Control-Allow-Origin", allowedOrigin);
-      c.header("Access-Control-Allow-Methods", "GET, POST, PUT, DELETE, OPTIONS");
-      c.header("Access-Control-Allow-Headers", "Content-Type, Authorization, X-Requested-With");
-      if (REQUESTING_ALLOWED_DOMAIN !== "*") {
+      c.header(
+        "Access-Control-Allow-Methods",
+        "GET, POST, PUT, DELETE, OPTIONS, PATCH",
+      );
+      c.header(
+        "Access-Control-Allow-Headers",
+        "Content-Type, Authorization, X-Requested-With",
+      );
+      // Always enable credentials for specific origins (never use wildcard with credentials)
+      if (allowedOrigin !== "*") {
         c.header("Access-Control-Allow-Credentials", "true");
       }
       c.header("Access-Control-Max-Age", "86400");
@@ -265,23 +310,27 @@ export function startRequestingServer(
   });
 
   // Apply CORS middleware to all routes using Hono's CORS middleware
-  app.use("*", cors({
-    allowMethods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
-    allowHeaders: ["Content-Type", "Authorization", "X-Requested-With"],
-    exposeHeaders: ["Content-Length", "Content-Type"],
-    maxAge: 86400,
-    origin: (origin: string | undefined): string | undefined => {
-      const allowed = isOriginAllowed(origin);
-      if (allowed) {
-        console.log(`[CORS] ✅ Allowing origin: "${origin}"`);
-      } else {
-        console.log(`[CORS] ❌ Rejecting origin: "${origin}"`);
-      }
-      return allowed;
-    },
-    credentials: REQUESTING_ALLOWED_DOMAIN !== "*",
-  }));
-  
+  app.use(
+    "*",
+    cors({
+      allowMethods: ["GET", "POST", "PUT", "DELETE", "OPTIONS", "PATCH"],
+      allowHeaders: ["Content-Type", "Authorization", "X-Requested-With"],
+      exposeHeaders: ["Content-Length", "Content-Type", "Authorization"],
+      maxAge: 86400,
+      origin: (origin: string | undefined): string | undefined => {
+        const allowed = isOriginAllowed(origin);
+        if (allowed) {
+          // console.log(`[CORS] ✅ Allowing origin: "${origin}"`);
+        } else {
+          console.log(`[CORS] ❌ Rejecting origin: "${origin}"`);
+        }
+        return allowed;
+      },
+      // Always enable credentials (we never use wildcard with credentials)
+      credentials: true,
+    }),
+  );
+
   // Additional middleware to ensure CORS headers are always set on all responses
   // This is a backup in case the CORS middleware doesn't set them for some reason
   app.use("*", async (c, next) => {
@@ -292,9 +341,16 @@ export function startRequestingServer(
       // Only set if not already set by CORS middleware
       if (!c.res.headers.get("Access-Control-Allow-Origin")) {
         c.header("Access-Control-Allow-Origin", allowedOrigin);
-        c.header("Access-Control-Allow-Methods", "GET, POST, PUT, DELETE, OPTIONS");
-        c.header("Access-Control-Allow-Headers", "Content-Type, Authorization, X-Requested-With");
-        if (REQUESTING_ALLOWED_DOMAIN !== "*") {
+        c.header(
+          "Access-Control-Allow-Methods",
+          "GET, POST, PUT, DELETE, OPTIONS, PATCH",
+        );
+        c.header(
+          "Access-Control-Allow-Headers",
+          "Content-Type, Authorization, X-Requested-With",
+        );
+        // Always enable credentials for specific origins
+        if (allowedOrigin !== "*") {
           c.header("Access-Control-Allow-Credentials", "true");
         }
       }
@@ -428,7 +484,8 @@ export function startRequestingServer(
   console.log(`\n📡 Server Configuration:`);
   console.log(`   - Port: ${PORT}`);
   console.log(`   - Base URL: ${REQUESTING_BASE_URL}`);
-  console.log(`   - CORS Origin: ${REQUESTING_ALLOWED_DOMAIN}`);
+  console.log(`   - CORS Origins: ${allowedOrigins.join(", ")}`);
+  console.log(`   - Credentials: enabled`);
   console.log(`   - Health Check: http://localhost:${PORT}/health`);
   console.log(`   - API Base: http://localhost:${PORT}${REQUESTING_BASE_URL}`);
 
