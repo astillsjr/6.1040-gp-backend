@@ -95,15 +95,15 @@ export const AcceptRequestRequest: Sync = (
 /**
  * CONCEPT-TO-CONCEPT: When a request is accepted, award points to both users and update listing status.
  */
-export const AwardPointsOnAccept: Sync = ({ itemRequest, requestDoc, itemDoc }) => ({
+export const AwardPointsOnAccept: Sync = ({ request, requestDoc, itemDoc }) => ({
   when: actions(
-    [ItemRequesting.acceptRequest, { request: itemRequest }, {}],
+    [ItemRequesting.acceptRequest, { request }, {}],
   ),
   where: async (frames) => {
     // Get the request document to find the requester
     let framesWithRequest = await frames.query(
       ItemRequesting._getRequest,
-      { request: itemRequest },
+      { request },
       { requestDoc },
     );
     // Get the item document to find the owner

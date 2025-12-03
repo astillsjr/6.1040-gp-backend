@@ -202,4 +202,20 @@ export default class ItemTransactionConcept {
       $or: [{ from: user }, { to: user }]
     }).sort({ createdAt: -1 }).toArray();
   }
+
+  /**
+   * _getSuccessfulBorrowsCount(): (count: number)
+   * @effects Returns the same count as ItemListing._getAvailableItemCount.
+   *          This represents the total number of AVAILABLE listings in the system.
+   *          Note: If the frontend applies additional filtering (e.g., dorm visibility),
+   *          the displayed count may differ. The frontend should use the filtered
+   *          count from _getListings if it wants to match what's displayed.
+   */
+  async _getSuccessfulBorrowsCount(_: {} = {}): Promise<{ count: number }[]> {
+    // Use the same collection and filter as ItemListing._getAvailableItemCount
+    // Both endpoints should return the same value
+    const listingsCollection = this.db.collection("ItemListing.listings");
+    const count = await listingsCollection.countDocuments({ status: "AVAILABLE" });
+    return [{ count }];
+  }
 } 

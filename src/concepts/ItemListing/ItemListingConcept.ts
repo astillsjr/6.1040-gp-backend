@@ -294,4 +294,13 @@ export default class ItemListingConcept {
     if (dormVisibility) filter.dormVisibility = dormVisibility;
     return await this.listings.find(filter).toArray();
   }
+
+  /**
+   * _getAvailableItemCount(): (count: number)
+   * **effects**: Returns the count of items with status AVAILABLE (for homepage display).
+   */
+  async _getAvailableItemCount(_: {} = {}): Promise<{ count: number }[]> {
+    const count = await this.listings.countDocuments({ status: "AVAILABLE" });
+    return [{ count }];
+  }
 }

@@ -55,6 +55,12 @@ export const inclusions: Record<string, string> = {
     "Public query to see available borrowing times for an item.",
   "/api/ItemListing/_getWindow":
     "Public query to get details of a specific availability window.",
+  "/api/ItemListing/_getAvailableItemCount":
+    "Public query to get the count of available items for homepage display.",
+
+  // ItemTransaction: Public queries for homepage statistics.
+  "/api/ItemTransaction/_getSuccessfulBorrowsCount":
+    "Public query to get the count of successful borrows (completed transactions) for homepage display.",
 
   // UserProfile: Public queries for viewing profiles and finding community members.
   "/api/UserProfile/_getProfile":
