@@ -1,5 +1,5 @@
 import { actions, Sync } from "@engine";
-import { ItemRequesting, ItemTransaction, ItemListing, Item, Requesting, UserAuthentication } from "@concepts";
+import { ItemRequesting, ItemTransaction, ItemListing, Item, Requesting, UserAuthentication, Communication } from "@concepts";
 
 /**
  * CONCEPT-TO-CONCEPT: When a request is accepted, a transaction is automatically created.
@@ -198,5 +198,22 @@ export const CancelTransactionResponse: Sync = ({ request }) => ({
   ),
   then: actions(
     [Requesting.respond, { request }],
+  ),
+});
+
+/**
+ * CONCEPT-TO-CONCEPT: When a transaction is created, automatically create a conversation between the two participants.
+ */
+export const CreateConversationOnTransaction: Sync = ({ transaction, transactionDoc }) => ({
+  when: actions(
+    [ItemTransaction.createTransaction, { transaction }, {}],
+  ),
+  where: (frames) => frames.query(ItemTransaction._getTransaction, { transaction }, { transactionDoc }),
+  then: actions(
+    [Communication.createConversation, {
+      participant1: transactionDoc.from,
+      participant2: transactionDoc.to,
+      transaction: transaction,
+    }],
   ),
 });
