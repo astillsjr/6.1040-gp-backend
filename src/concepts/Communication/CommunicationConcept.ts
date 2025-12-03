@@ -234,6 +234,16 @@ export default class CommunicationConcept {
   }
 
   /**
+   * Get a message by ID (for syncs).
+   */
+  async _getMessage(
+    { message }: { message: Message }
+  ): Promise<{ messageDoc: MessageDoc }[]> {
+    const doc = await this.messages.findOne({ _id: message });
+    return doc ? [{ messageDoc: doc }] : [];
+  }
+
+  /**
    * Get a conversation by ID (for syncs).
    */
   async _getConversation(
