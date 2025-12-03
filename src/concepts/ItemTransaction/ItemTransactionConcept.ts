@@ -1,6 +1,7 @@
 import { Collection, Db } from "npm:mongodb";
 import { freshID } from "@utils/database.ts";
 import { Empty, ID } from "@utils/types.ts";
+import { sseConnectionManager } from "@utils/sse-connection-manager.ts";
 
 // Collection prefix to ensure namespace separation
 const PREFIX = "ItemTransaction" + ".";
@@ -50,6 +51,43 @@ export default class ItemTransactionConcept {
 
   constructor(private readonly db: Db) {
     this.transactions = this.db.collection(PREFIX + "transactions");
+  }
+
+  /**
+   * Helper function to push transaction update to SSE for both parties.
+   */
+  private async pushTransactionUpdate(transaction: ItemTransactionDoc): Promise<void> {
+    const updateData = {
+      type: "transaction_update",
+      transaction: {
+        _id: transaction._id,
+        from: transaction.from,
+        to: transaction.to,
+        item: transaction.item,
+        type: transaction.type,
+        status: transaction.status,
+        createdAt: transaction.createdAt.toISOString(),
+        pickedUpAt: transaction.pickedUpAt
+          ? transaction.pickedUpAt.toISOString()
+          : null,
+        returnedAt: transaction.returnedAt
+          ? transaction.returnedAt.toISOString()
+          : null,
+      },
+    };
+
+    // Push to both parties
+    try {
+      await Promise.all([
+        sseConnectionManager.sendToUser(transaction.from, "transaction_update", updateData),
+        sseConnectionManager.sendToUser(transaction.to, "transaction_update", updateData),
+      ]);
+    } catch (error) {
+      console.error(
+        `[ItemTransaction] Failed to push transaction ${transaction._id} to SSE:`,
+        error,
+      );
+    }
   }
 
   /**
@@ -105,10 +143,17 @@ export default class ItemTransactionConcept {
       return { error: "Transaction must be in PENDING_PICKUP status" };
     }
 
+    const pickedUpAt = new Date();
     if (transactionDoc.type === "BORROW") {
-      await this.transactions.updateOne({ _id: transaction }, { $set: { status: "IN_PROGRESS", pickedUpAt: new Date() } });
+      await this.transactions.updateOne({ _id: transaction }, { $set: { status: "IN_PROGRESS", pickedUpAt } });
     } else {
-      await this.transactions.updateOne({ _id: transaction }, { $set: { status: "COMPLETED", pickedUpAt: new Date() } });
+      await this.transactions.updateOne({ _id: transaction }, { $set: { status: "COMPLETED", pickedUpAt } });
+    }
+
+    // Push update to SSE
+    const updatedTransaction = await this.transactions.findOne({ _id: transaction });
+    if (updatedTransaction) {
+      await this.pushTransactionUpdate(updatedTransaction);
     }
 
     return {};
@@ -136,7 +181,15 @@ export default class ItemTransactionConcept {
       return { error: "Transaction must be of type BORROW" };
     }
 
-    await this.transactions.updateOne({ _id: transaction }, { $set: { status: "PENDING_RETURN", returnedAt: new Date() } });
+    const returnedAt = new Date();
+    await this.transactions.updateOne({ _id: transaction }, { $set: { status: "PENDING_RETURN", returnedAt } });
+    
+    // Push update to SSE
+    const updatedTransaction = await this.transactions.findOne({ _id: transaction });
+    if (updatedTransaction) {
+      await this.pushTransactionUpdate(updatedTransaction);
+    }
+    
     return {};
   }
 
@@ -159,6 +212,13 @@ export default class ItemTransactionConcept {
     }
 
     await this.transactions.updateOne({ _id: transaction }, { $set: { status: "COMPLETED" } });
+    
+    // Push update to SSE
+    const updatedTransaction = await this.transactions.findOne({ _id: transaction });
+    if (updatedTransaction) {
+      await this.pushTransactionUpdate(updatedTransaction);
+    }
+    
     return {};
   }
 
@@ -181,6 +241,13 @@ export default class ItemTransactionConcept {
     }
 
     await this.transactions.updateOne({ _id: transaction }, { $set: { status: "CANCELLED" } });
+    
+    // Push update to SSE
+    const updatedTransaction = await this.transactions.findOne({ _id: transaction });
+    if (updatedTransaction) {
+      await this.pushTransactionUpdate(updatedTransaction);
+    }
+    
     return {};
   }
 

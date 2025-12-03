@@ -1,6 +1,7 @@
 import { Collection, Db } from "npm:mongodb";
 import { freshID } from "@utils/database.ts";
 import { Empty, ID } from "@utils/types.ts";
+import { sseConnectionManager } from "@utils/sse-connection-manager.ts";
 
 // Collection prefix to ensure namespace separation
 const PREFIX = "Communication" + ".";
@@ -133,6 +134,34 @@ export default class CommunicationConcept {
       { _id: conversation },
       { $set: { lastMessageAt: new Date() } }
     );
+
+    // Push message to SSE stream immediately for the other participant
+    try {
+      const otherParticipant = conversationDoc.participant1 === author
+        ? conversationDoc.participant2
+        : conversationDoc.participant1;
+
+      await sseConnectionManager.sendToUser(
+        otherParticipant,
+        "message",
+        {
+          type: "message",
+          message: {
+            _id: message._id,
+            conversation: message.conversation,
+            author: message.author,
+            content: message.content,
+            createdAt: message.createdAt.toISOString(),
+            readAt: message.readAt ? message.readAt.toISOString() : null,
+          },
+        },
+      );
+    } catch (error) {
+      console.error(
+        `[Communication] Failed to push message ${message._id} to SSE:`,
+        error,
+      );
+    }
     
     return { message: message._id };
   }
@@ -234,5 +263,32 @@ export default class CommunicationConcept {
       $or: [{ participant1: user }, { participant2: user }]
     }).toArray();
     return { conversations: docs };
+  }
+
+  /**
+   * Get all unread messages for a user (for SSE backlog/polling).
+   */
+  async _getUnreadMessagesByUser(
+    { user }: { user: User }
+  ): Promise<MessageDoc[]> {
+    // Get all conversations for the user
+    const userConversations = await this.conversations.find({
+      $or: [{ participant1: user }, { participant2: user }]
+    }).toArray();
+
+    const conversationIds = userConversations.map((c) => c._id);
+
+    if (conversationIds.length === 0) {
+      return [];
+    }
+
+    // Get all unread messages in those conversations where user is not the author
+    const messages = await this.messages.find({
+      conversation: { $in: conversationIds },
+      author: { $ne: user },
+      readAt: null,
+    }).sort({ createdAt: -1 }).toArray();
+
+    return messages;
   }
 }

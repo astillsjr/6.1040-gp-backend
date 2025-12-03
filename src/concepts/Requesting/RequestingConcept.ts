@@ -4,6 +4,7 @@ import { Collection, Db } from "npm:mongodb";
 import { freshID } from "@utils/database.ts";
 import { ID } from "@utils/types.ts";
 import { exclusions, inclusions } from "./passthrough.ts";
+import { createEventStream } from "@utils/sse-stream.ts";
 import "jsr:@std/dotenv/load";
 
 /**
@@ -247,6 +248,27 @@ export function startRequestingServer(
   const passthroughFile = "./src/concepts/Requesting/passthrough.ts";
   if (unverified) {
     console.log(`FIX: Please verify routes in: ${passthroughFile}`);
+  }
+
+  /**
+   * SSE UNIFIED EVENT STREAM
+   *
+   * Real-time event delivery via Server-Sent Events.
+   * Handles notifications, transaction updates, request updates, and messages.
+   * Requires authentication via access token (query param or Authorization header).
+   */
+  if (instances.Notifications && instances.UserAuthentication) {
+    const eventStream = createEventStream(
+      instances.Notifications,
+      instances.UserAuthentication,
+      instances.ItemTransaction,
+      instances.ItemRequesting,
+      instances.Communication,
+    );
+
+    const sseRoute = `${REQUESTING_BASE_URL}/events/stream`;
+    app.get(sseRoute, eventStream);
+    console.log(`  -> GET ${sseRoute} (SSE unified event stream)`);
   }
 
   /**

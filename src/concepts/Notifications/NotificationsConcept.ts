@@ -1,6 +1,7 @@
 import { Collection, Db } from "npm:mongodb";
 import { freshID } from "@utils/database.ts";
 import { Empty, ID } from "@utils/types.ts";
+import { sseConnectionManager } from "@utils/sse-connection-manager.ts";
 
 // Collection prefix to ensure namespace separation
 const PREFIX = "Notifications" + ".";
@@ -88,8 +89,34 @@ export default class NotificationsConcept {
 
     await this.notifications.insertOne(notification);
 
-    // TODO: Push notification to SSE stream here when SSE infrastructure is ready
-    // For now, the notification is marked as SENT and can be queried by the SSE stream
+    // Push notification to SSE stream immediately if user is connected
+    try {
+      await sseConnectionManager.sendToUser(
+        recipient,
+        "notification",
+        {
+          type: "notification",
+          notification: {
+            _id: notification._id,
+            recipient: notification.recipient,
+            type: notification.type,
+            title: notification.title,
+            content: notification.content,
+            status: notification.status,
+            createdAt: notification.createdAt.toISOString(),
+            readAt: notification.readAt instanceof Date
+              ? notification.readAt.toISOString()
+              : null,
+          },
+        },
+      );
+    } catch (error) {
+      // Log error but don't fail notification creation if SSE push fails
+      console.error(
+        `[Notifications] Failed to push notification ${notification._id} to SSE:`,
+        error,
+      );
+    }
 
     return { notification: notification._id };
   }
