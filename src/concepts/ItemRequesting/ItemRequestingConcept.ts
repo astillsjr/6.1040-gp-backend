@@ -2,6 +2,7 @@ import { Collection, Db } from "npm:mongodb";
 import { freshID } from "@utils/database.ts";
 import { Empty, ID } from "@utils/types.ts";
 import { sseConnectionManager } from "@utils/sse-connection-manager.ts";
+import { toISOStringSafe } from "@utils/sse-stream.ts";
 
 // Collection prefix to ensure namespace separation
 const PREFIX = "ItemRequesting" + ".";
@@ -61,13 +62,9 @@ export default class ItemRequestingConcept {
         item: request.item,
         type: request.type,
         status: request.status,
-        createdAt: request.createdAt.toISOString(),
-        requestedStartTime: request.requestedStartTime
-          ? request.requestedStartTime.toISOString()
-          : null,
-        requestedEndTime: request.requestedEndTime
-          ? request.requestedEndTime.toISOString()
-          : null,
+        createdAt: toISOStringSafe(request.createdAt) || new Date().toISOString(),
+        requestedStartTime: toISOStringSafe(request.requestedStartTime),
+        requestedEndTime: toISOStringSafe(request.requestedEndTime),
       },
     };
 

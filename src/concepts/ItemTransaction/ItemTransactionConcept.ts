@@ -2,6 +2,7 @@ import { Collection, Db } from "npm:mongodb";
 import { freshID } from "@utils/database.ts";
 import { Empty, ID } from "@utils/types.ts";
 import { sseConnectionManager } from "@utils/sse-connection-manager.ts";
+import { toISOStringSafe } from "@utils/sse-stream.ts";
 
 // Collection prefix to ensure namespace separation
 const PREFIX = "ItemTransaction" + ".";
@@ -66,13 +67,9 @@ export default class ItemTransactionConcept {
         item: transaction.item,
         type: transaction.type,
         status: transaction.status,
-        createdAt: transaction.createdAt.toISOString(),
-        pickedUpAt: transaction.pickedUpAt
-          ? transaction.pickedUpAt.toISOString()
-          : null,
-        returnedAt: transaction.returnedAt
-          ? transaction.returnedAt.toISOString()
-          : null,
+        createdAt: toISOStringSafe(transaction.createdAt) || new Date().toISOString(),
+        pickedUpAt: toISOStringSafe(transaction.pickedUpAt),
+        returnedAt: toISOStringSafe(transaction.returnedAt),
       },
     };
 

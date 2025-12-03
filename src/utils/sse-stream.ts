@@ -58,7 +58,7 @@ async function safeWriteSSE(
  * Safely converts a date value to ISO string.
  * Handles Date objects, strings, and null/undefined.
  */
-function toISOStringSafe(date: Date | string | null | undefined): string | null {
+export function toISOStringSafe(date: Date | string | null | undefined): string | null {
   if (!date) return null;
   if (typeof date === 'string') {
     // If it's already an ISO string, return it
@@ -202,7 +202,7 @@ function createNotificationStream(
             return notif.createdAt >= lastSeenNotificationTimestamp;
           });
 
-        // Send backlog notifications
+          // Send backlog notifications
         for (const notification of backlogNotifications) {
           const sent = await safeWriteSSE(stream, "notification", {
             type: "notification",
@@ -213,10 +213,8 @@ function createNotificationStream(
               title: notification.title,
               content: notification.content,
               status: notification.status,
-              createdAt: notification.createdAt.toISOString(),
-              readAt: notification.readAt
-                ? notification.readAt.toISOString()
-                : null,
+              createdAt: toISOStringSafe(notification.createdAt) || new Date().toISOString(),
+              readAt: toISOStringSafe(notification.readAt),
             },
           });
 
@@ -264,9 +262,9 @@ function createNotificationStream(
                 item: transaction.item,
                 type: transaction.type,
                 status: transaction.status,
-                createdAt: transaction.createdAt.toISOString(),
-                pickedUpAt: transaction.pickedUpAt ? transaction.pickedUpAt.toISOString() : null,
-                returnedAt: transaction.returnedAt ? transaction.returnedAt.toISOString() : null,
+                createdAt: toISOStringSafe(transaction.createdAt) || new Date().toISOString(),
+                pickedUpAt: toISOStringSafe(transaction.pickedUpAt),
+                returnedAt: toISOStringSafe(transaction.returnedAt),
               },
             });
 
@@ -304,7 +302,7 @@ function createNotificationStream(
                 item: request.item,
                 type: request.type,
                 status: request.status,
-                createdAt: request.createdAt.toISOString(),
+                createdAt: toISOStringSafe(request.createdAt) || new Date().toISOString(),
                 requestedStartTime: toISOStringSafe(request.requestedStartTime),
                 requestedEndTime: toISOStringSafe(request.requestedEndTime),
               },
@@ -340,8 +338,8 @@ function createNotificationStream(
                 conversation: message.conversation,
                 author: message.author,
                 content: message.content,
-                createdAt: message.createdAt.toISOString(),
-                readAt: message.readAt ? message.readAt.toISOString() : null,
+                createdAt: toISOStringSafe(message.createdAt) || new Date().toISOString(),
+                readAt: toISOStringSafe(message.readAt),
               },
             });
 
@@ -417,10 +415,8 @@ function createNotificationStream(
                 title: notification.title,
                 content: notification.content,
                 status: notification.status,
-                createdAt: notification.createdAt.toISOString(),
-                readAt: notification.readAt
-                  ? notification.readAt.toISOString()
-                  : null,
+                createdAt: toISOStringSafe(notification.createdAt) || new Date().toISOString(),
+                readAt: toISOStringSafe(notification.readAt),
               },
             });
 
@@ -463,13 +459,9 @@ function createNotificationStream(
                       item: transaction.item,
                       type: transaction.type,
                       status: transaction.status,
-                      createdAt: transaction.createdAt.toISOString(),
-                      pickedUpAt: transaction.pickedUpAt
-                        ? transaction.pickedUpAt.toISOString()
-                        : null,
-                      returnedAt: transaction.returnedAt
-                        ? transaction.returnedAt.toISOString()
-                        : null,
+                      createdAt: toISOStringSafe(transaction.createdAt) || new Date().toISOString(),
+                      pickedUpAt: toISOStringSafe(transaction.pickedUpAt),
+                      returnedAt: toISOStringSafe(transaction.returnedAt),
                     },
                   });
 
@@ -507,7 +499,7 @@ function createNotificationStream(
                     item: request.item,
                     type: request.type,
                     status: request.status,
-                    createdAt: request.createdAt.toISOString(),
+                    createdAt: toISOStringSafe(request.createdAt) || new Date().toISOString(),
                     requestedStartTime: toISOStringSafe(request.requestedStartTime),
                     requestedEndTime: toISOStringSafe(request.requestedEndTime),
                   },
@@ -545,8 +537,8 @@ function createNotificationStream(
                     conversation: message.conversation,
                     author: message.author,
                     content: message.content,
-                    createdAt: message.createdAt.toISOString(),
-                    readAt: message.readAt ? message.readAt.toISOString() : null,
+                    createdAt: toISOStringSafe(message.createdAt) || new Date().toISOString(),
+                    readAt: toISOStringSafe(message.readAt),
                   },
                 });
 
