@@ -192,6 +192,7 @@ export const exclusions: Array<string> = [
   "/api/Communication/markConversationRead",
   "/api/Communication/_getConversation", // Internal query for syncs
   "/api/Communication/_getConversationByTransaction", // Internal query for syncs
+  "/api/Communication/_getMessage", // Internal query for syncs
 
   // Notifications: System actions and internal queries.
   "/api/Notifications/createAndSendNotification", // System action, triggered by syncs

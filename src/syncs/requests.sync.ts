@@ -1,8 +1,9 @@
-import { actions, Sync } from "@engine";
+import { actions, Sync, Frames } from "@engine";
 import {
   Item,
   ItemRequesting,
   ItemListing,
+  ItemTransaction,
   Requesting,
   UserAuthentication,
   UserProfile,
@@ -95,7 +96,7 @@ export const AcceptRequestRequest: Sync = (
 /**
  * CONCEPT-TO-CONCEPT: When a request is accepted, award points to both users and update listing status.
  */
-export const AwardPointsOnAccept: Sync = ({ request, requestDoc, itemDoc }) => ({
+export const AwardPointsOnAccept: Sync = ({ request, requestDoc, itemDoc, itemId, item, requester, owner }) => ({
   when: actions(
     [ItemRequesting.acceptRequest, { request }, {}],
   ),
@@ -106,17 +107,48 @@ export const AwardPointsOnAccept: Sync = ({ request, requestDoc, itemDoc }) => (
       { request },
       { requestDoc },
     );
-    // Get the item document to find the owner
-    return await framesWithRequest.query(
+    if (framesWithRequest.length === 0) {
+      return framesWithRequest;
+    }
+    // First get the item ID from the request
+    const framesWithItem = await framesWithRequest.query(
+      ItemRequesting._getItemForRequest,
+      { request },
+      { item: itemId },
+    );
+    if (framesWithItem.length === 0) {
+      return framesWithItem;
+    }
+    // Now get the full item document using the item ID
+    const framesWithItemDoc = await framesWithItem.query(
       Item._getItemById,
-      { item: requestDoc.item },
+      { item: itemId },
       { item: itemDoc },
     );
+    if (framesWithItemDoc.length === 0) {
+      return framesWithItemDoc;
+    }
+    // Extract values from requestDoc and itemDoc objects
+    const result = new Frames();
+    for (const frame of framesWithItemDoc) {
+      const doc = frame[requestDoc] as { item: string; requester: string } | undefined;
+      const itemDocValue = frame[itemDoc] as { owner: string } | undefined;
+      if (!doc || !itemDocValue) {
+        continue;
+      }
+      result.push({
+        ...frame,
+        [item]: doc.item,
+        [requester]: doc.requester,
+        [owner]: itemDocValue.owner,
+      });
+    }
+    return result;
   },
   then: actions(
-    [ItemListing.updateListingStatus, { item: requestDoc.item, status: "CLAIMED" }],
-    [UserProfile.addPoints, { user: itemDoc.owner, amount: 100 }],
-    [UserProfile.addPoints, { user: requestDoc.requester, amount: 100 }],
+    [ItemListing.updateListingStatus, { item, status: "CLAIMED" }],
+    [UserProfile.addPoints, { user: owner, amount: 100 }],
+    [UserProfile.addPoints, { user: requester, amount: 100 }],
   ),
 });
 
