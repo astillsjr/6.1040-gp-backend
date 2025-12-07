@@ -9,3 +9,5 @@ For more information, find our assignments here in these folders:
 [Checkpoint Alpha](deliverables/checkpoint-alpha)
 
 [Checkpoint Beta](deliverables/checkpoint-beta)
+
+[User Testing](deliverables/user-testing)
