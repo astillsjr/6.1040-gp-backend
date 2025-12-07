@@ -89,6 +89,20 @@ export const inclusions: Record<string, string> = {
     "Public query to view reviews written by a user.",
   "/api/Reviewing/_getReviewForTransactionByReviewer":
     "Public query to check if a user has reviewed a transaction.",
+
+  // Communication: User-facing queries for viewing their own conversations and messages.
+  "/api/Communication/_getConversationsByUser":
+    "Query for a user to view their own conversations.",
+  "/api/Communication/_getUnreadMessagesByUser":
+    "Query for a user to view their own unread messages.",
+  "/api/Communication/_getMessages":
+    "Query for a user to view messages in a conversation they participate in.",
+
+  // Notifications: User-facing queries for viewing their own notifications.
+  "/api/Notifications/_getNotificationsByRecipient":
+    "Query for a user to view their own notifications.",
+  "/api/Notifications/_getUnreadNotificationsByRecipient":
+    "Query for a user to view their own unread notifications.",
 };
 
 /**
@@ -113,11 +127,13 @@ export const exclusions: Array<string> = [
   "/api/UserAuthentication/createTokenPair", // Internal helper method, should not be an endpoint.
   "/api/UserAuthentication/getUserIdFromAccessToken", // Internal helper method, should not be an endpoint.
   "/api/UserAuthentication/_getUserFromToken",
+  "/api/UserAuthentication/_getAllUsernames", // Debug query, should not be a public endpoint.
 
   // UserProfile: Actions requiring authentication and authorization checks.
   "/api/UserProfile/createProfile", // Must verify user can only create their own profile.
   "/api/UserProfile/updateProfile", // Must verify user can only update their own profile.
   "/api/UserProfile/updateScores", // System action, triggered by syncs only.
+  "/api/UserProfile/addPoints", // System action, triggered by syncs (rewards).
 
   // Item: Mutations and private queries require auth.
   "/api/Item/createItem",
@@ -144,12 +160,14 @@ export const exclusions: Array<string> = [
   "/api/ItemRequesting/_getRequest", // Exposes private request details.
   "/api/ItemRequesting/_getItemForRequest", // Internal query for sync logic.
   "/api/ItemRequesting/_getOtherPendingRequests", // Exposes private data about other users' requests.
+  "/api/ItemRequesting/pushRequestUpdate", // Private helper method for SSE updates.
   "/api/ItemTransaction/createTransaction", // System action, triggered by syncs.
   "/api/ItemTransaction/markPickedUp",
   "/api/ItemTransaction/markReturned",
   "/api/ItemTransaction/confirmReturn",
   "/api/ItemTransaction/cancelTransaction",
   "/api/ItemTransaction/_getTransaction", // Exposes private transaction details.
+  "/api/ItemTransaction/pushTransactionUpdate", // Private helper method for SSE updates.
 
   // Reviewing: Mutations require auth (verify reviewer is party to transaction).
   "/api/Reviewing/submitReview",
@@ -166,4 +184,19 @@ export const exclusions: Array<string> = [
   "/api/Flagging/_getFlagsByUser", // Admin query
   "/api/Flagging/_getFlagsForUser", // Admin query
   "/api/Flagging/_getFlagsForItem", // Admin query
+
+  // Communication: All mutations require auth (verify user is participant).
+  "/api/Communication/createConversation",
+  "/api/Communication/sendMessage",
+  "/api/Communication/markMessageRead",
+  "/api/Communication/markConversationRead",
+  "/api/Communication/_getConversation", // Internal query for syncs
+  "/api/Communication/_getConversationByTransaction", // Internal query for syncs
+  "/api/Communication/_getMessage", // Internal query for syncs
+
+  // Notifications: System actions and internal queries.
+  "/api/Notifications/createAndSendNotification", // System action, triggered by syncs
+  "/api/Notifications/markNotificationRead", // Requires auth
+  "/api/Notifications/_getNotification", // Internal query for syncs
+  "/api/Notifications/constructNotificationMessage", // Private helper method, should not be an endpoint.
 ];

@@ -1,6 +1,8 @@
 import { Collection, Db } from "npm:mongodb";
 import { freshID } from "@utils/database.ts";
 import { Empty, ID } from "@utils/types.ts";
+import { sseConnectionManager } from "@utils/sse-connection-manager.ts";
+import { toISOStringSafe } from "@utils/sse-stream.ts";
 
 // Collection prefix to ensure namespace separation
 const PREFIX = "ItemRequesting" + ".";
@@ -46,6 +48,39 @@ export default class ItemRequestingConcept {
 
   constructor(private readonly db: Db) {
     this.requests = this.db.collection(PREFIX + "requests");
+  }
+
+  /**
+   * Helper function to push request update to SSE for the requester.
+   */
+  private async pushRequestUpdate(request: ItemRequestDoc): Promise<void> {
+    const updateData = {
+      type: "request_update",
+      request: {
+        _id: request._id,
+        requester: request.requester,
+        item: request.item,
+        type: request.type,
+        status: request.status,
+        createdAt: toISOStringSafe(request.createdAt) || new Date().toISOString(),
+        requestedStartTime: toISOStringSafe(request.requestedStartTime),
+        requestedEndTime: toISOStringSafe(request.requestedEndTime),
+      },
+    };
+
+    // Push to requester
+    try {
+      await sseConnectionManager.sendToUser(
+        request.requester,
+        "request_update",
+        updateData,
+      );
+    } catch (error) {
+      console.error(
+        `[ItemRequesting] Failed to push request ${request._id} to SSE:`,
+        error,
+      );
+    }
   }
 
   /**
@@ -100,6 +135,13 @@ export default class ItemRequestingConcept {
     }
 
     await this.requests.updateOne({ _id: request }, { $set: { status: "ACCEPTED" } });
+    
+    // Push update to SSE
+    const updatedRequest = await this.requests.findOne({ _id: request });
+    if (updatedRequest) {
+      await this.pushRequestUpdate(updatedRequest);
+    }
+    
     return {};
   }
 
@@ -121,6 +163,13 @@ export default class ItemRequestingConcept {
     }
 
     await this.requests.updateOne({ _id: request }, { $set: { status: "REJECTED" } });
+    
+    // Push update to SSE
+    const updatedRequest = await this.requests.findOne({ _id: request });
+    if (updatedRequest) {
+      await this.pushRequestUpdate(updatedRequest);
+    }
+    
     return {};
   }
 
@@ -147,6 +196,13 @@ export default class ItemRequestingConcept {
     }
 
     await this.requests.updateOne({ _id: request }, { $set: { status: "CANCELLED" } });
+    
+    // Push update to SSE
+    const updatedRequest = await this.requests.findOne({ _id: request });
+    if (updatedRequest) {
+      await this.pushRequestUpdate(updatedRequest);
+    }
+    
     return {};
   }
 

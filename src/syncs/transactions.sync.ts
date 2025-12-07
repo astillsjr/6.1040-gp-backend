@@ -1,27 +1,60 @@
-import { actions, Sync } from "@engine";
+import { actions, Sync, Frames } from "@engine";
 import { ItemRequesting, ItemTransaction, ItemListing, Item, Requesting, UserAuthentication, Communication } from "@concepts";
 
 /**
  * CONCEPT-TO-CONCEPT: When a request is accepted, a transaction is automatically created.
  */
-export const CreateTransactionOnAccept: Sync = ({ request, requestDoc, itemDoc }) => ({
+export const CreateTransactionOnAccept: Sync = ({ request, requestDoc, itemDoc, itemId, item, requester, owner, type, requesterNotes }) => ({
   when: actions(
     [ItemRequesting.acceptRequest, { request }, {}],
   ),
   where: async (frames) => {
     // Step 1: Get the request details
     let framesWithRequest = await frames.query(ItemRequesting._getRequest, { request }, { requestDoc });
-    // Step 2: Get the item details using the item ID from the request
-    return await framesWithRequest.query(Item._getItemById, { item: requestDoc.item }, { item: itemDoc });
+    if (framesWithRequest.length === 0) {
+      return framesWithRequest;
+    }
+    // Step 2: Get the item ID from the request, then the full item document
+    const framesWithItem = await framesWithRequest.query(
+      ItemRequesting._getItemForRequest,
+      { request },
+      { item: itemId },
+    );
+    if (framesWithItem.length === 0) {
+      return framesWithItem;
+    }
+    // Step 3: Get the full item document
+    const framesWithItemDoc = await framesWithItem.query(Item._getItemById, { item: itemId }, { item: itemDoc });
+    if (framesWithItemDoc.length === 0) {
+      return framesWithItemDoc;
+    }
+    // Extract values from requestDoc and itemDoc objects
+    const result = new Frames();
+    for (const frame of framesWithItemDoc) {
+      const doc = frame[requestDoc] as { item: string; requester: string; type: string; requesterNotes: string } | undefined;
+      const itemDocValue = frame[itemDoc] as { owner: string } | undefined;
+      if (!doc || !itemDocValue) {
+        continue;
+      }
+      result.push({
+        ...frame,
+        [item]: doc.item,
+        [requester]: doc.requester,
+        [owner]: itemDocValue.owner,
+        [type]: doc.type,
+        [requesterNotes]: doc.requesterNotes,
+      });
+    }
+    return result;
   },
   then: actions(
     [ItemTransaction.createTransaction, {
-      from: itemDoc.owner,
-      to: requestDoc.requester,
-      item: requestDoc.item,
-      type: requestDoc.type,
+      from: owner,
+      to: requester,
+      item,
+      type,
       fromNotes: "",
-      toNotes: requestDoc.requesterNotes,
+      toNotes: requesterNotes,
     }],
   ),
 });
@@ -82,7 +115,11 @@ export const RejectOtherRequestsOnAccept: Sync = ({ request, item, otherRequest 
   ),
   where: async (frames) => {
     const framesWithItem = await frames.query(ItemRequesting._getItemForRequest, { request }, { item });
-    return await framesWithItem.query(ItemRequesting._getOtherPendingRequests, { item, exclude: request }, { otherRequest });
+    if (framesWithItem.length === 0) {
+      return framesWithItem;
+    }
+    const result = await framesWithItem.query(ItemRequesting._getOtherPendingRequests, { item, exclude: request }, { otherRequest });
+    return result;
   },
   then: actions(
     [ItemRequesting.rejectRequest, { request: otherRequest }],
