@@ -10,4 +10,4 @@ For more information, find our assignments here in these folders:
 
 [Checkpoint Beta](deliverables/checkpoint-beta)
 
-[User Testing](deliverables/user-testing)
+[User Testing](deliverables/user-testing.md)
