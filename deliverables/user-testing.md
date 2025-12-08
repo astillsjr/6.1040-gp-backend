@@ -28,7 +28,7 @@ Task 4 (Post an Item) went smoothly. The participant completed the form with min
 
 For Task 5 (Log Out / Log In), the participant completed the task without friction, noting it was “easy to find the login again” and that the session behaved as expected.
 
-Overall, the participant described LocalLoop as “promising” and said they would use it “if more people start posting items.” However, their moments of hesitation consistently pointed toward issues of clarity—especially in search, filtering, and transparency of information.
+Overall, the participant described LocalLoop as “promising” and said they would use it “if more people start posting items.” However, their moments of hesitation consistently pointed toward issues of clarity, especially in search, filtering, and transparency of information.
 
 ### User Test 2
 
