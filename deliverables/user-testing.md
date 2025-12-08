@@ -5,13 +5,9 @@ The following table lists the tasks used in the user test. Tasks are ordered so 
 | Task Title | Instruction to Participant | Rationale for Inclusion |
 | ----------- | ----------- | ----------- |
 | Create an Account | “Please create a new LocalLoop account using your MIT email.” | Tests whether first-time users can easily onboard. Onboarding friction is a major barrier preventing adoption of alternatives to Dormspam. |
-| ----------- | ----------- | ----------- |
 | Set Up Your Profile | “Please add your dorm, your name, and a short bio to your profile.” | User identity and dorm location are essential for trust and logistics. Tests clarity of required fields and visibility settings. |
-| ----------- | ----------- | ----------- |
 | Browse for an Item You Need | “Please send a borrow request for any item of interest.” | Browsing/search is core to solving the ‘inefficiency of Dormspam.’ Tests whether users can navigate categorized listings, search, and filters. |
-| ----------- | ----------- | ----------- |
 | Post an Item to Lend | “Please list an Ethernet cable you own as available to lend.” | Lending is essential for sustainability and must be easy to encourage participation. Tests whether users can complete the full listing workflow. |
-| ----------- | ----------- | ----------- |
 | Log Out and Log Back In | “Please log out and then log back into your account." | Ensures the user understands session controls and can reaccess their listings/requests. Identifies potential navigational issues. |
 
 
