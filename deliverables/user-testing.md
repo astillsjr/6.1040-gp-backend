@@ -16,17 +16,19 @@ The following table lists the tasks used in the user test. Tasks are ordered so 
 
 ### User Test 1
 
-The participant completed all tasks successfully. They encountered encountered several unexpected usability concerns that revealed gaps in LocalLoop’s interaction flow. During Task 1 (Create an Account), the participant paused because they were unsure whether MIT Touchstone or a standard email/password login would be used. They verbalized: “Is this supposed to link to MIT login?” This confusion suggests an unclear gulf of execution around authentication.
+Before beginning the user test, the participant was asked for consent and given a one-sentence explanation of LocalLoop’s purpose. They then proceeded through the task list while thinking aloud, and I took observation notes throughout.
 
-In Task 2, the participant filled in profile information easily but hesitated when selecting their dorm, asking aloud whether their dorm location would be public. This reflected a gap in the gulf of evaluation—privacy implications were not clearly communicated.
+For Task 1 (Create an Account), the participant completed the signup, but paused early on and asked, “Is this supposed to link to MIT Touchstone?” They hesitated between using their MIT email and creating a standalone password. This moment revealed an unexpected gulf of execution: the authentication flow does not match student expectations of campus apps, which almost always integrate with MIT Touchstone. Once they proceeded, they found the form simple and appreciated how “quick” it felt.
 
-The most significant friction that happened during Task 3 (Browsing) was that the user thought they could type in the dorms and was unaware of the filter we created to sort by dorms.
+During Task 2 (Set Up Your Profile), the participant filled out their name and bio smoothly. However, they hesitated over the Dorm field, reading it aloud and asking whether “other users can see this.” This indicated a gulf of evaluation: the interface does not communicate privacy rules clearly. Still, the participant commented positively that the overall layout was “clean and simple.”
 
-Task 4 (Posting an Item) proceeded smoothly except for confusion around “Condition” and “Category” dropdowns.
+In Task 3 (Browse for an Item), the participant attempted to type their dorm name into the search bar, expecting the system to filter by dorm automatically. They did not initially notice the dorm-filter dropdown. When prompted to continue thinking aloud, they said, “Oh, I thought this search bar searched everything, including location.” This highlighted two issues: (1) the search bar does not match users’ mental model of global search, and (2) filters lack visibility. After discovering the dorm filter, the participant successfully located an item and submitted a request.
 
-Finally, in Task 5, the participant had no problem logging out and in with their username and password created before.
+Task 4 (Post an Item) went smoothly. The participant completed the form with minor hesitation around the “Condition” and “Category” dropdowns. They verbally wondered what the category options meant—for example, whether “Electronics” included cables or only devices. They still finished the listing quickly and said the form was “straightforward.”
 
-Overall, the participant found the app promising!
+For Task 5 (Log Out / Log In), the participant completed the task without friction, noting it was “easy to find the login again” and that the session behaved as expected.
+
+Overall, the participant described LocalLoop as “promising” and said they would use it “if more people start posting items.” However, their moments of hesitation consistently pointed toward issues of clarity—especially in search, filtering, and transparency of information.
 
 ### User Test 2
 
