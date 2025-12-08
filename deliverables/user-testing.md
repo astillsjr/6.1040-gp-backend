@@ -73,3 +73,12 @@ Issue: Participant clearly stated how the home page of the site is very busy, wi
 Cause: Home page displays a lot of text and some stats elements that might not be absolutely necessary. 
 
 Fix: Rework the Home page to be more simple and functional. Some ideas for here could be to limit the amount of explanatory text or make it interactive and maybe a short "sneak-peek" feed of the current items that are listed.
+
+
+4. Low Visibility of Search Filters
+
+Issue: Participants expected the search bar to filter by dorm automatically; they did not see the dorm dropdown.
+
+Cause: Search bar appears visually dominant; filters are visually secondary and not grouped.
+
+Fix: Increase visual prominence of filters; move them near search bar; add placeholder text “Search items (use filters for dorm).”
