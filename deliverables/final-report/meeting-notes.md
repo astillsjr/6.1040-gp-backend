@@ -1,5 +1,7 @@
 ## Deliverables Associated With Each Meeting
 
+<br>
+<br>
 
 ## Agenda
 - Meeting scheduled for **November 13 at 12:30 PM**.
@@ -26,6 +28,9 @@
 - Reevaluate whether BeaverBite can be improved to meet requirements or whether a new concept is needed.
 
 
+<br>
+<br>
+<br>
 
 
 ## Agenda
@@ -46,7 +51,9 @@
 - Setting up the Browse Items page.
 - Beginning to allow users to interact with each other.
 
-
+<br>
+<br>
+<br>
 
 ## Agenda
 - Meeting scheduled for **December 4 at 12:30 PM**.
