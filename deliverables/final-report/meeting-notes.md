@@ -1,8 +1,5 @@
 ## Deliverables Associated With Each Meeting
 
-<br>
-<br>
-
 ## Agenda
 - Meeting scheduled for **November 13 at 12:30 PM**.
 
