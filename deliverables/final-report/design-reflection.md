@@ -4,6 +4,14 @@ The following are each member's reflection on the final project, our thoughts, c
 
 ## Kayle Orantes
 
+Through this final project, I was able to deepen my understanding of full-stack development and see how all the pieces of a system connect together. One of the most exciting parts for me was getting to connect our site to a real database. I had just begun learning similar skills in my 6.1850 class, so being introduced to these ideas first in 6.104 made the experience in my other class feel much more manageable. Seeing how backend logic, routes, and data storage all interact gave me a clearer picture of how real applications are structured.
+
+Another major takeaway for me was learning how to break down a large problem in a group setting. Our team spent a lot of time on calls working through the code together, figuring out how to approach different pieces of the project, and deciding how to divide responsibilities in a way that made sense. This collaborative process helped me understand not only the technical side of the project, but also the communication and coordination that go into building software as a team.
+
+Overall, I really enjoyed this class and felt that the teachings prepared me well to handle both the technical challenges and the design thinking required for a project of this scope.
+
+
+
 ## Anthony Stills
 
 ## Sebastian Becerril Salinas
